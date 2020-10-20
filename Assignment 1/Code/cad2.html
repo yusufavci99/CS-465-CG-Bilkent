@@ -10,7 +10,7 @@ varying vec4 fColor;
 void
 main()
 {
-    gl_PointSize = 5.0;
+    //gl_PointSize = 5.0;
     gl_Position = vPosition;
     fColor = vColor;
 }
@@ -20,12 +20,11 @@ main()
 
 precision mediump float;
 
-varying vec4 fColor;
+uniform vec4 fColor;
 void
 main()
 {
-    //gl_FragColor = fColor;
-    gl_FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );
+    gl_FragColor = fColor;
 }
 </script>
 
@@ -39,6 +38,12 @@ main()
 <canvas id="gl-canvas" width="512" height="512">
 Oops ... your browser doesnt support the HTML5 canvas element
 </canvas>
+<div>
+    Changes Will Be Applied After Clicking Render Polygon!<br>
+    Background Color: <input type="color" id="backgroundColor" value="#777777"><br>
+    Shape Color: <input type="color" id="shapeColor" value="#00ffbb"><br>
+    <button id="saveShapeButton">Save Shape</button><input type="file" id="fileInput" />
+</div>
 </div>
 <div>
 <select id = "mymenu" size = "7">
@@ -50,7 +55,7 @@ Oops ... your browser doesnt support the HTML5 canvas element
     <option value = "5">Magenta</option>
     <option value = "6">Cyan</option>
 </select>
-<button id = "Button1">End Polygon</button>
+<button id = "Button1">Render Polygon</button>
 </div>
 
 

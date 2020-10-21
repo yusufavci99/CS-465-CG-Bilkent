@@ -2,17 +2,17 @@
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute vec4 vPosition;
-attribute vec4 vColor;
-
-varying vec4 fColor;
-
+//attribute vec4 vColor;
+//varying vec4 fColor;
+uniform float zoomC;
 
 void
 main()
 {
-    //gl_PointSize = 5.0;
-    gl_Position = vPosition;
-    fColor = vColor;
+    //gl_PointSize = 0.2;
+    
+    gl_Position = vec4(vPosition.xyz, zoomC);
+    //fColor = vColor;
 }
 </script>
 
@@ -28,35 +28,38 @@ main()
 }
 </script>
 
+<link rel="stylesheet" href="kochPolygon.css">
 <script type="text/javascript" src="../Common/webgl-utils.js"></script>
 <script type="text/javascript" src="../Common/initShaders.js"></script>
 <script type="text/javascript" src="../Common/MV.js"></script>
-<script type="text/javascript" src="cad2.js"></script>
+<script type="text/javascript" src="kochPolygon.js"></script>
 
 <body>
+<div id="pageWrapper">
 <div>
-<canvas id="gl-canvas" width="512" height="512">
+<canvas id="gl-canvas" width="1200px" height="600">
 Oops ... your browser doesnt support the HTML5 canvas element
 </canvas>
+</div>
 <div>
     Changes Will Be Applied After Clicking Render Polygon!<br>
     Background Color: <input type="color" id="backgroundColor" value="#777777"><br>
     Shape Color: <input type="color" id="shapeColor" value="#00ffbb"><br>
     <button id="saveShapeButton">Save Shape</button><input type="file" id="fileInput" />
+    <p>Custom range slider:</p>
+    <div id="iterationWrapper">
+        <input type="range" min="0" max="7" value="2" class="slider" id="sliderNumber">
+        <input type="number" id="formNumber" name="quantity" min="0" max="100" value="2">
+    </div>
+    <div>
+
+    <button id = "Button1">Render Polygon</button>
+    <button id = "resetPolygon">Reset Polygon</button>
+    </div>
+        
 </div>
 </div>
-<div>
-<select id = "mymenu" size = "7">
-    <option value = "0">Black</option>
-    <option value = "1">Red</option>
-    <option value = "2">Yellow</option>
-    <option value = "3">Green</option>
-    <option value = "4">Blue</option>
-    <option value = "5">Magenta</option>
-    <option value = "6">Cyan</option>
-</select>
-<button id = "Button1">Render Polygon</button>
-</div>
+
 
 
 

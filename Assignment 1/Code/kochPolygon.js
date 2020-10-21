@@ -5,54 +5,41 @@ var gl;
 
 var maxNumVertices  = 200;
 var index = 0;
-
-var cindex = 0;
-
-var colors = [
-
-    vec4( 0.0, 0.0, 0.0, 1.0 ),  // black
-    vec4( 1.0, 0.0, 0.0, 1.0 ),  // red
-    vec4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
-    vec4( 0.0, 1.0, 0.0, 1.0 ),  // green
-    vec4( 0.0, 0.0, 1.0, 1.0 ),  // blue
-    vec4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
-    vec4( 0.0, 1.0, 1.0, 1.0)   // cyan
-];    
+ 
 var t;
 var numPolygons = 0;
 var numIndices = [];
 numIndices[0] = 0;
 var start = [0];
 var points = [];
-var colorData = [];
 var resultPoints = [];
-var iterationCount = 3;
+var iterationCount = 2;
 var backgroundColorRGB;
 var shapeColorRGB;
 
 var fColorPointer;
+var oxo;
+var zoomMultiplier = 1;
 
 window.onload = function init() {
     canvas = document.getElementById( "gl-canvas" );
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
-    
-    var m = document.getElementById("mymenu");
-    
-    m.addEventListener("click", function() {
-       cindex = m.selectedIndex;
-        });
         
     var a = document.getElementById("Button1")
     a.addEventListener("click", function() {
         resultPoints = [];
 
-        for(let lineIndex = 0; lineIndex < points.length - 1; lineIndex++) {
-            koch(points[lineIndex], points[lineIndex + 1], iterationCount);
+        if(iterationCount > 0) {
+            for(let lineIndex = 0; lineIndex < points.length - 1; lineIndex++) {
+                koch(points[lineIndex], points[lineIndex + 1], iterationCount);
+            }
+            //koch(points[points.length - 1], points[0], iterationCount);
         }
-        koch(points[points.length - 1], points[0], iterationCount);
-
+        else {
+            resultPoints = points;
+        }
         gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
         //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
         gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
@@ -76,9 +63,6 @@ window.onload = function init() {
 
         // gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
         // gl.bufferSubData(gl.ARRAY_BUFFER, 8*index, flatten(t));
-
-        t = vec4(colors[cindex]);
-        colorData.push(t);
 
         // gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
         // gl.bufferSubData(gl.ARRAY_BUFFER, 16*index, flatten(t));
@@ -107,6 +91,8 @@ window.onload = function init() {
     //
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     fColorPointer = gl.getUniformLocation(program, "fColor");
+    oxo = gl.getUniformLocation(program, "zoomC");
+
     gl.useProgram( program );
 
   
@@ -124,10 +110,15 @@ window.onload = function init() {
     gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
 
+
+    // UTILITIES
+
+    // Saving The Koch Curve
     document.getElementById("saveShapeButton").addEventListener("click", () => {
         download(JSON.stringify({backgroundColor: backgroundColorRGB, iteration: iterationCount, vertices: points}), "koch.txt", "text/plain");
     })
 
+    // Loading A koch Curve
     const inputElement = document.getElementById("fileInput");
     inputElement.addEventListener("change", handleFiles, false);
     function handleFiles() {
@@ -148,12 +139,74 @@ window.onload = function init() {
         })(this.files[0]);
         r.readAsText(this.files[0]);
     }
-    
+
+    // Iteration Number
+    let slider = document.getElementById("sliderNumber");
+    let numForm = document.getElementById("formNumber");
+    slider.addEventListener("change", (event) => {
+        let newValue = parseInt(event.target.value);
+
+        numForm.value = event.target.value;
+        iterationCount = newValue;
+    })
+    numForm.addEventListener("change", (event) => {
+        let newValue = parseInt(event.target.value);
+        
+        if (event.target.value > parseInt(numForm.max)) {
+            slider.value = numForm.max;
+            numForm.value = numForm.max;
+            iterationCount = parseInt(numForm.max);
+        }
+        else if (event.target.value < parseInt(numForm.min)){
+            slider.value = numForm.min;
+            numForm.value = numForm.min;
+            iterationCount = parseInt(numForm.min);
+        }
+        else {
+            slider.value = event.target.value;
+            iterationCount = newValue;
+        }
+    })
+
+    // Reset Polygon
+
+    document.getElementById("resetPolygon").addEventListener("click", () => {
+        points = [];
+        gl.clear( gl.COLOR_BUFFER_BIT);
+    });
+
+    // ZOOMING
+
+    //StackOverFlow
+    window.addEventListener("keydown", function (event) {
+        if (event.defaultPrevented) {
+            return; // Do nothing if the event was already processed
+        }
+        
+        switch (event.key) {
+            case "-":
+                zoomMultiplier *= (10/9);
+                render();
+                break;
+            case "+":
+                zoomMultiplier *= 0.9;
+                render();
+                break;
+            default:
+            return; // Quit when this doesn't handle the key event.
+        }
+        
+        // Cancel the default action to avoid it being handled twice
+        event.preventDefault();
+    }, true);
+    // the last option dispatches the event to the listener first,
+    // then dispatches event to window
+
+
 }
 
 function render() {
-    gl.clear( gl.COLOR_BUFFER_BIT );
-    // gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+   
 
     //get selected colors in hex
     var backgroundColorHex = document.getElementById("backgroundColor").value;
@@ -166,8 +219,12 @@ function render() {
     //clear buffer with new color
     gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
 
+    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
     // change fragment shader during render time
     gl.uniform4f(fColorPointer, shapeColorRGB.r / 255.0, shapeColorRGB.g / 255.0, shapeColorRGB.b / 255.0, 1.0);
+    
+    gl.uniform1f(oxo, zoomMultiplier);
 
     // for(var i=0; i<numPolygons; i++) {
     //     gl.drawArrays( gl.POINTS, start[i], numIndices[i] );
@@ -209,6 +266,7 @@ function koch(point1, point9, iteration) {
     let point7 = add( temp, point8);
 
 
+    // Create Koch Curve with the resulting lines.
     if(iteration === 0) {
         resultPoints.push(point1);
         resultPoints.push(point2);
@@ -220,6 +278,8 @@ function koch(point1, point9, iteration) {
         resultPoints.push(point8);
         resultPoints.push(point9);
     }
+
+    // Create A koch Curve with each line
     else {
         koch(point1, point2, iteration);
         koch(point2, point3, iteration);

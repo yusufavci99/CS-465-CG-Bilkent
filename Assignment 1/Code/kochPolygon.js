@@ -1,26 +1,30 @@
 "use strict"
 
+// Routine WebGL Variables
 var canvas;
 var gl;
 
-var maxNumVertices  = 200;
-var index = 0;
+var fillPolygon = false;
+// Determines whether the polygon will be shown with the curve.
+var renderPolygon = true;
+// Temporary Variable To Save Mouse Position Vector.
+var finished = false;
 
-var renderingMethod;
-
-var t;
-var numPolygons = 0;
-var numIndices = [];
-numIndices[0] = 0;
-var start = [0];
-var points = [];
-var resultPoints = [];
+var mousePoint;
+// Stores the vertices of the polygon.
+var polygonVertices = [];
+// Stores the vertices of the koch curve.
+var curveVertices = [];
+// Number of iterations of the Koch curve rule.
 var iterationCount = 2;
+// Background Color As RGB
 var backgroundColorRGB;
-var shapeColorRGB;
+// Color
+var polygonColorRGB;
+var curveColorRGB;
 
 var fColorPointer;
-var oxo;
+var zoomLocation;
 var zoomMultiplier = 1;
 var bufferId;
 
@@ -30,80 +34,57 @@ window.onload = function init() {
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
     
-    renderingMethod = gl.LINE_STRIP;
+    
     var a = document.getElementById("Button1")
     a.addEventListener("click", function() {
-        renderingMethod = gl.LINE_STRIP;
 
-        resultPoints = [];
+        curveVertices = [];
 
         if(iterationCount > 0) {
-            for(let lineIndex = 0; lineIndex < points.length - 1; lineIndex++) {
-                koch(points[lineIndex], points[lineIndex + 1], iterationCount);
+            for(let lineIndex = 0; lineIndex < polygonVertices.length - 1; lineIndex++) {
+                koch(polygonVertices[lineIndex], polygonVertices[lineIndex + 1], iterationCount);
             }
-            //koch(points[points.length - 1], points[0], iterationCount);
+            //koch(polygonVertices[polygonVertices.length - 1], polygonVertices[0], iterationCount);
         }
         else {
-            resultPoints = points;
-        }
-        // gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-        // //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
-        // gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
-
-        for(let i = 0; i < resultPoints.length; i ++) {
-            gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
-            //gl.bufferSubData(gl.ARRAY_BUFFER, 16*i, flatten(colorData[i]));
+            curveVertices = polygonVertices;
         }
     
-        numPolygons++;
-        numIndices[numPolygons] = 0;
-        start[numPolygons] = index;
         render();
     });
 
 
     let drawing = false;
-    let finished = false;
+    finished = false;
 
     canvas.addEventListener("mousedown", function(event){
         
 
         if (finished) {
-            points = [];
-            resultPoints = [];
+            polygonVertices = [];
+            curveVertices = [];
             finished = false;
         }
 
         if (drawing) {
             drawing = false;
-            points.pop();
+            polygonVertices.pop();
 
-            if( length(subtract(t, points[0])) < 0.05) {
-                points.push(vec2(points[0][0], points[0][1]));
+            if( length(subtract(mousePoint, polygonVertices[0])) < 0.05) {
+                polygonVertices.push(vec2(polygonVertices[0][0], polygonVertices[0][1]));
                 drawing = false;
                 finished = true;
-                renderingMethod = gl.TRIANGLE_FAN;
+
                 render();
                 return;
             }
         }
 
-        t  = vec2(2*event.clientX/canvas.width-1, 
+        mousePoint = vec2(2*event.clientX/canvas.width-1, 
            2*(canvas.height-event.clientY)/canvas.height-1);
-
-
         
-        points.push(t);
-
-        // gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-        // gl.bufferSubData(gl.ARRAY_BUFFER, 8*index, flatten(t));
-
-        // gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
-        // gl.bufferSubData(gl.ARRAY_BUFFER, 16*index, flatten(t));
-        points.push(t);
-
-        numIndices[numPolygons]++;
-        index++;
+        polygonVertices.push(mousePoint);
+        polygonVertices.push(mousePoint);
 
         drawing = true;
         
@@ -112,34 +93,28 @@ window.onload = function init() {
     canvas.addEventListener("mousemove", function(event){
 
         if(drawing) {
-            t  = vec2(2*event.clientX/canvas.width-1, 
+            mousePoint = vec2(2*event.clientX/canvas.width-1, 
             2*(canvas.height-event.clientY)/canvas.height-1);
 
-            points.pop();
-            points.push(t);
+            polygonVertices.pop();
+            polygonVertices.push(mousePoint);
             
             render();
         }
     } );
 
-    // function renderFast() {
-    //     resultPoints = points;
-
-    //     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    //     gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
-
-    //     render();
-    // }
-
-    
-
     gl.viewport( 0, 0, canvas.width, canvas.height );
 
     //get selected colors in hex
-    var backgroundColorHex = document.getElementById("backgroundColor").value;
-
+    let backgroundColorHex = document.getElementById("backgroundColor").value;
     //convert hex colors into rgb
     backgroundColorRGB = hexToRgb(backgroundColorHex);
+
+    let polygonColorHex = document.getElementById("polygonColor").value;
+    polygonColorRGB = hexToRgb(polygonColorHex);
+
+    let curveColorHex = document.getElementById("curveColor").value;
+    curveColorRGB = hexToRgb(curveColorHex);
 
     //clear buffer with new color
     gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
@@ -151,31 +126,29 @@ window.onload = function init() {
     //
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     fColorPointer = gl.getUniformLocation(program, "fColor");
-    oxo = gl.getUniformLocation(program, "zoomC");
+    zoomLocation = gl.getUniformLocation(program, "zoomC");
 
     gl.useProgram( program );
 
   
     bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, 8*maxNumVertices, gl.STATIC_DRAW );
     var vPos = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPos, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPos );
-    
-    var cBufferId = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
-    gl.bufferData( gl.ARRAY_BUFFER, 16*maxNumVertices, gl.STATIC_DRAW );
-    // var vColor = gl.getAttribLocation( program, "vColor" );
-    // gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
-    // gl.enableVertexAttribArray( vColor );
-
 
     // UTILITIES
 
     // Saving The Koch Curve
     document.getElementById("saveShapeButton").addEventListener("click", () => {
-        download(JSON.stringify({backgroundColor: backgroundColorRGB, iteration: iterationCount, vertices: points}), "koch.txt", "text/plain");
+        download(JSON.stringify({
+            backgroundColor: backgroundColorRGB,
+            polygonColor: polygonColorRGB,
+            curveColor: curveColorRGB,
+            iteration: iterationCount,
+            vertices: polygonVertices
+        }),
+        "koch.txt", "text/plain");
     })
 
     // Loading A koch Curve
@@ -190,9 +163,14 @@ window.onload = function init() {
                 
                 console.log(JSON.parse(contents));
                 let loadedContent = JSON.parse(contents);
-                points = loadedContent.vertices;
+                polygonVertices = loadedContent.vertices;
                 backgroundColorRGB = loadedContent.backgroundColor;
+                polygonColorRGB = loadedContent.polygonColor;
+                curveColorRGB = loadedContent.curveColor;
                 iterationCount = loadedContent.iteration;
+
+                finished = equal(polygonVertices[0], polygonVertices[polygonVertices.length - 1]);
+                gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
 
                 document.getElementById("Button1").click();
             };
@@ -231,7 +209,7 @@ window.onload = function init() {
     // Reset Polygon
 
     document.getElementById("resetPolygon").addEventListener("click", () => {
-        points = [];
+        polygonVertices = [];
         gl.clear( gl.COLOR_BUFFER_BIT);
     });
 
@@ -262,47 +240,77 @@ window.onload = function init() {
     // the last option dispatches the event to the listener first,
     // then dispatches event to window
 
+    // Fill CheckBox
+    document.getElementById("fillPolygon").addEventListener("click", (event) => {
+        fillPolygon = event.target.checked;
+        render();
+    });
+
+    // Show Polygon CheckBox
+    document.getElementById("showPolygon").addEventListener("click", (event) => {
+        renderPolygon = event.target.checked;
+        render();
+    });
+
+    // Change Background Color
+    document.getElementById("backgroundColor").addEventListener("change", (event) => {
+        var backgroundColorHex = event.target.value;
+        backgroundColorRGB = hexToRgb(backgroundColorHex);
+        // Set Background (Clear) Color
+        gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
+        render();
+    });
+
+    // Change Polygon Color
+    document.getElementById("polygonColor").addEventListener("change", (event) => {
+        var polygonColorHex = event.target.value;
+        polygonColorRGB = hexToRgb(polygonColorHex);
+        render();
+    });
+
+    // Change Background Color
+    document.getElementById("curveColor").addEventListener("change", (event) => {
+        var curveColorHex = event.target.value;
+        curveColorRGB = hexToRgb(curveColorHex);
+        render();
+    });
 
 }
 
 function render() {
-   
-
-    //get selected colors in hex
-    var backgroundColorHex = document.getElementById("backgroundColor").value;
-    var shapeColorHex = document.getElementById("shapeColor").value;
-
-    //convert hex colors into rgb
-    backgroundColorRGB = hexToRgb(backgroundColorHex);
-    shapeColorRGB = hexToRgb(shapeColorHex);
-
-    //clear buffer with new color
-    gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
+    
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
-    // change fragment shader during render time
-    gl.uniform4f(fColorPointer, shapeColorRGB.r / 255.0, shapeColorRGB.g / 255.0, shapeColorRGB.b / 255.0, 1.0);
-    
-    gl.uniform1f(oxo, zoomMultiplier);
+    gl.uniform1f(zoomLocation, zoomMultiplier);
 
-    // for(var i=0; i<numPolygons; i++) {
-    //     gl.drawArrays( gl.POINTS, start[i], numIndices[i] );
-    // }
-
+    // Loading Polygon Data To The Buffer
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(polygonVertices), gl.STATIC_DRAW );
 
-    gl.drawArrays( renderingMethod, 0, points.length );
-    //gl.drawArrays( gl.TRIANGLE_FAN, 0, resultPoints.length );
+    // change fragment shader during render time
+    gl.uniform4f(fColorPointer, polygonColorRGB.r / 255.0, polygonColorRGB.g / 255.0, polygonColorRGB.b / 255.0, 1.0);
 
-    if(resultPoints.length != 0) {
+    // Drawing The Polygon
+    if(finished) {
+        if(renderPolygon || curveVertices.length == 0) {
+            if(fillPolygon) {
+                gl.drawArrays( gl.TRIANGLE_FAN, 0, polygonVertices.length );
+            } else {
+                gl.drawArrays( gl.LINE_STRIP, 0, polygonVertices.length );
+            }
+        }
+    } else {
+        gl.drawArrays( gl.LINE_STRIP, 0, polygonVertices.length );
+    }
+    
+    // Drawing The Curve
+    if(curveVertices.length != 0) {
+
+        // change fragment shader during render time
+        gl.uniform4f(fColorPointer, curveColorRGB.r / 255.0, curveColorRGB.g / 255.0, curveColorRGB.b / 255.0, 1.0);
         gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-        //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
-        gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
-
-        gl.drawArrays( renderingMethod, 0, resultPoints.length );
-        //gl.drawArrays( gl.TRIANGLE_FAN, 0, resultPoints.length );
+        gl.bufferData( gl.ARRAY_BUFFER, flatten(curveVertices), gl.STATIC_DRAW );
+        gl.drawArrays( gl.LINE_STRIP, 0, curveVertices.length );
     }
 }
 
@@ -341,15 +349,15 @@ function koch(point1, point9, iteration) {
 
     // Create Koch Curve with the resulting lines.
     if(iteration === 0) {
-        resultPoints.push(point1);
-        resultPoints.push(point2);
-        resultPoints.push(point3);
-        resultPoints.push(point4);
-        resultPoints.push(point5);
-        resultPoints.push(point6);
-        resultPoints.push(point7);
-        resultPoints.push(point8);
-        resultPoints.push(point9);
+        curveVertices.push(point1);
+        curveVertices.push(point2);
+        curveVertices.push(point3);
+        curveVertices.push(point4);
+        curveVertices.push(point5);
+        curveVertices.push(point6);
+        curveVertices.push(point7);
+        curveVertices.push(point8);
+        curveVertices.push(point9);
     }
 
     // Create A koch Curve with each line

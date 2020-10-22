@@ -5,7 +5,9 @@ var gl;
 
 var maxNumVertices  = 200;
 var index = 0;
- 
+
+var renderingMethod;
+
 var t;
 var numPolygons = 0;
 var numIndices = [];
@@ -20,15 +22,19 @@ var shapeColorRGB;
 var fColorPointer;
 var oxo;
 var zoomMultiplier = 1;
+var bufferId;
 
 window.onload = function init() {
     canvas = document.getElementById( "gl-canvas" );
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
-        
+    
+    renderingMethod = gl.LINE_STRIP;
     var a = document.getElementById("Button1")
     a.addEventListener("click", function() {
+        renderingMethod = gl.LINE_STRIP;
+
         resultPoints = [];
 
         if(iterationCount > 0) {
@@ -40,9 +46,9 @@ window.onload = function init() {
         else {
             resultPoints = points;
         }
-        gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-        //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
-        gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
+        // gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
+        // //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
+        // gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
 
         for(let i = 0; i < resultPoints.length; i ++) {
             gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
@@ -55,10 +61,38 @@ window.onload = function init() {
         render();
     });
 
+
+    let drawing = false;
+    let finished = false;
+
     canvas.addEventListener("mousedown", function(event){
+        
+
+        if (finished) {
+            points = [];
+            resultPoints = [];
+            finished = false;
+        }
+
+        if (drawing) {
+            drawing = false;
+            points.pop();
+
+            if( length(subtract(t, points[0])) < 0.05) {
+                points.push(vec2(points[0][0], points[0][1]));
+                drawing = false;
+                finished = true;
+                renderingMethod = gl.TRIANGLE_FAN;
+                render();
+                return;
+            }
+        }
+
         t  = vec2(2*event.clientX/canvas.width-1, 
            2*(canvas.height-event.clientY)/canvas.height-1);
 
+
+        
         points.push(t);
 
         // gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
@@ -66,10 +100,36 @@ window.onload = function init() {
 
         // gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
         // gl.bufferSubData(gl.ARRAY_BUFFER, 16*index, flatten(t));
+        points.push(t);
 
         numIndices[numPolygons]++;
         index++;
+
+        drawing = true;
+        
     } );
+
+    canvas.addEventListener("mousemove", function(event){
+
+        if(drawing) {
+            t  = vec2(2*event.clientX/canvas.width-1, 
+            2*(canvas.height-event.clientY)/canvas.height-1);
+
+            points.pop();
+            points.push(t);
+            
+            render();
+        }
+    } );
+
+    // function renderFast() {
+    //     resultPoints = points;
+
+    //     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
+    //     gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
+
+    //     render();
+    // }
 
     
 
@@ -96,7 +156,7 @@ window.onload = function init() {
     gl.useProgram( program );
 
   
-    var bufferId = gl.createBuffer();
+    bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
     gl.bufferData( gl.ARRAY_BUFFER, 8*maxNumVertices, gl.STATIC_DRAW );
     var vPos = gl.getAttribLocation( program, "vPosition" );
@@ -106,9 +166,9 @@ window.onload = function init() {
     var cBufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBufferId );
     gl.bufferData( gl.ARRAY_BUFFER, 16*maxNumVertices, gl.STATIC_DRAW );
-    var vColor = gl.getAttribLocation( program, "vColor" );
-    gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vColor );
+    // var vColor = gl.getAttribLocation( program, "vColor" );
+    // gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
+    // gl.enableVertexAttribArray( vColor );
 
 
     // UTILITIES
@@ -218,7 +278,6 @@ function render() {
 
     //clear buffer with new color
     gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
-
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
     // change fragment shader during render time
@@ -229,8 +288,22 @@ function render() {
     // for(var i=0; i<numPolygons; i++) {
     //     gl.drawArrays( gl.POINTS, start[i], numIndices[i] );
     // }
-    gl.drawArrays( gl.LINE_STRIP, 0, resultPoints.length );
+
+    gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
+    //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+
+    gl.drawArrays( renderingMethod, 0, points.length );
     //gl.drawArrays( gl.TRIANGLE_FAN, 0, resultPoints.length );
+
+    if(resultPoints.length != 0) {
+        gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
+        //gl.bufferSubData(gl.ARRAY_BUFFER, 8*i, flatten(points[i]));
+        gl.bufferData( gl.ARRAY_BUFFER, flatten(resultPoints), gl.STATIC_DRAW );
+
+        gl.drawArrays( renderingMethod, 0, resultPoints.length );
+        //gl.drawArrays( gl.TRIANGLE_FAN, 0, resultPoints.length );
+    }
 }
 
 function koch(point1, point9, iteration) {

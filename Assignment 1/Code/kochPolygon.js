@@ -27,6 +27,7 @@ var fColorPointer;
 var zoomLocation;
 var zoomMultiplier = 1;
 var bufferId;
+var aspectRatio;
 
 window.onload = function init() {
     canvas = document.getElementById( "gl-canvas" );
@@ -40,15 +41,19 @@ window.onload = function init() {
 
         curveVertices = [];
 
-        if(iterationCount > 0) {
-            for(let lineIndex = 0; lineIndex < polygonVertices.length - 1; lineIndex++) {
-                koch(polygonVertices[lineIndex], polygonVertices[lineIndex + 1], iterationCount);
+        if (finished) {
+            if (iterationCount > 0) {
+                for(let lineIndex = 0; lineIndex < polygonVertices.length - 1; lineIndex++) {
+                    koch(polygonVertices[lineIndex], polygonVertices[lineIndex + 1], iterationCount);
+                }
             }
-            //koch(polygonVertices[polygonVertices.length - 1], polygonVertices[0], iterationCount);
+            else {
+                curveVertices = polygonVertices;
+            }
+        } else {
+            alert("You Should Complete The Polygon");
         }
-        else {
-            curveVertices = polygonVertices;
-        }
+
     
         render();
     });
@@ -103,7 +108,10 @@ window.onload = function init() {
         }
     } );
 
-    gl.viewport( 0, 0, canvas.width, canvas.height );
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+    //gl.viewport( 0, 0, canvas.width, canvas.height );
+    aspectRatio = canvas.clientWidth / canvas.clientHeight;
+
 
     //get selected colors in hex
     let backgroundColorHex = document.getElementById("backgroundColor").value;
@@ -315,6 +323,7 @@ function render() {
 }
 
 function koch(point1, point9, iteration) {
+
     iteration--;
 
     // Calculate Point 2
@@ -322,7 +331,7 @@ function koch(point1, point9, iteration) {
 
     // Calculate Point 3
     let temp = subtract(point1, point2);
-    temp = vec2(temp[1], -temp[0]);
+    temp = vec2(temp[1] / aspectRatio, -temp[0] * aspectRatio);
     let point3 = add( temp, point2);
 
     // Calculate Point 5
@@ -330,12 +339,12 @@ function koch(point1, point9, iteration) {
     
     // Calculate Point 4
     temp = subtract(point2, point5);
-    temp = vec2(temp[1], -temp[0]);
+    temp = vec2(temp[1] / aspectRatio, -temp[0] * aspectRatio);
     let point4 = add( temp, point5);
 
     // Calculate Point 6
     temp = subtract(point2, point5);
-    temp = vec2(-temp[1], temp[0]);
+    temp = vec2(-temp[1] / aspectRatio, temp[0] * aspectRatio);
     let point6 = add( temp, point5);
 
     // Calculate Point 8
@@ -343,7 +352,7 @@ function koch(point1, point9, iteration) {
 
     // Calculate Point 7
     temp = subtract(point5, point8);
-    temp = vec2(-temp[1], temp[0]);
+    temp = vec2(-temp[1] / aspectRatio, temp[0] * aspectRatio);
     let point7 = add( temp, point8);
 
 

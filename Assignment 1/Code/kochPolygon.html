@@ -6,13 +6,10 @@ attribute vec4 vPosition;
 //varying vec4 fColor;
 uniform float zoomC;
 
-void
+void 
 main()
 {
-    //gl_PointSize = 0.2;
-    
     gl_Position = vec4(vPosition.xyz, zoomC);
-    //fColor = vColor;
 }
 </script>
 
@@ -80,22 +77,19 @@ Oops ... your browser doesnt support the HTML5 canvas element
     <br>
     <button id="saveShapeButton">Save Shape</button>
     <input type="file" id="fileInput"/>
-    <p>Custom range slider:</p>
+    <p>Choose Number of Iterations:</p>
     <div id="iterationWrapper">
         <input type="range" min="0" max="7" value="2" class="slider" id="sliderNumber">
         <input type="number" id="formNumber" name="quantity" min="0" max="100" value="2">
     </div>
     <div>
 
-    <button id = "Button1">Koch Curve</button>
+    <button id = "curveButton">Koch Curve</button>
     <button id = "resetPolygon">Reset Polygon</button>
     </div>
         
 </div>
 </div>
-
-
-
 
 </body>
 </html>

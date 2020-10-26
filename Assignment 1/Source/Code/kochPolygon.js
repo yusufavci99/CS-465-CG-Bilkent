@@ -9,6 +9,8 @@ var fillPolygon = false;
 var renderPolygon = true;
 // Temporary Variable To Save Mouse Position Vector.
 var finished = false;
+// Currently Drawing and Edge.
+var drawing = false;
 // Temporarily stores mouse coordinates
 var mousePoint;
 // Stores the vertices of the polygon.
@@ -68,7 +70,7 @@ window.onload = function init() {
     });
 
     // True if currently dragging.
-    let drawing = false;
+    drawing = false;
     canvas.addEventListener("mousedown", function(event){
 
         // Restrart if there was a finished Polygon.
@@ -163,6 +165,13 @@ window.onload = function init() {
 
     // Saving The Koch Curve
     document.getElementById("saveShapeButton").addEventListener("click", () => {
+
+        // Doesn't Allow If Polygon Is not Finished.
+        if(!finished) {
+            alert("Please Complete The Polygon First");
+            return;
+        }
+
         download(JSON.stringify({
             backgroundColor: backgroundColorRGB,
             polygonColor: polygonColorRGB,
@@ -186,15 +195,20 @@ window.onload = function init() {
                 var contents = e.target.result;
                 
                 let loadedContent = JSON.parse(contents);
+                // Load Polygon Vertices.
                 polygonVertices = loadedContent.vertices;
+                // Load Colors
                 backgroundColorRGB = loadedContent.backgroundColor;
                 polygonColorRGB = loadedContent.polygonColor;
                 curveColorRGB = loadedContent.curveColor;
+                // Load Iteration Count
                 iterationCount = loadedContent.iteration;
+                // Load Other Util Info
                 fillPolygon = loadedContent.fill;
                 renderPolygon = loadedContent.show;
                 finished = equal(polygonVertices[0], polygonVertices[polygonVertices.length - 1]);
                 gl.clearColor(backgroundColorRGB.r / 255.0, backgroundColorRGB.g / 255.0, backgroundColorRGB.b / 255.0, 1.0);
+                drawing = false;
 
                 document.getElementById("fillPolygon").checked = fillPolygon;
                 document.getElementById("showPolygon").checked = renderPolygon;
@@ -218,11 +232,13 @@ window.onload = function init() {
     numForm.addEventListener("change", (event) => {
         let newValue = parseInt(event.target.value);
         
+        // Don't Allow Too Big Number
         if (event.target.value > parseInt(numForm.max)) {
             slider.value = numForm.max;
             numForm.value = numForm.max;
             iterationCount = parseInt(numForm.max);
         }
+        // Don't Allow Too Small Number
         else if (event.target.value < parseInt(numForm.min)){
             slider.value = numForm.min;
             numForm.value = numForm.min;

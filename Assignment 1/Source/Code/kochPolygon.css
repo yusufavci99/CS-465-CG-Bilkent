@@ -13,6 +13,11 @@ body {
     flex-direction: row;
 }
 
+#colors {
+    display: grid;
+    grid-template-columns: 160px 50px;
+}
+
 /* W3Slider Style */
 .slidecontainer {
     width: 100%;

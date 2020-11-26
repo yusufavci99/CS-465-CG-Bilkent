@@ -6,13 +6,10 @@ attribute vec4 vPosition;
 //varying vec4 fColor;
 uniform float zoomC;
 
-void
+void 
 main()
 {
-    //gl_PointSize = 0.2;
-    
     gl_Position = vec4(vPosition.xyz, zoomC);
-    //fColor = vColor;
 }
 </script>
 
@@ -42,26 +39,57 @@ Oops ... your browser doesnt support the HTML5 canvas element
 </canvas>
 </div>
 <div>
-    Changes Will Be Applied After Clicking Render Polygon!<br>
-    Background Color: <input type="color" id="backgroundColor" value="#777777"><br>
-    Shape Color: <input type="color" id="shapeColor" value="#00ffbb"><br>
-    <button id="saveShapeButton">Save Shape</button><input type="file" id="fileInput" />
-    <p>Custom range slider:</p>
+    <br>
+    <br>
+    <br>
+    <div id="colors">
+        <div>
+            Background Color:
+        </div>
+        <div>
+            <input type="color" id="backgroundColor" value="#777777"><br>
+        </div>
+        <div>
+            Polygon Color:
+        </div>
+        <div>
+            <input type="color" id="polygonColor" value="#00ffbb"><br>
+        </div>
+        <div>
+            Curve Color:
+        </div>
+        <div>
+            <input type="color" id="curveColor" value="#00aaff"><br>
+        </div>
+        <div>
+            Fill Polygon:
+        </div>
+        <div>
+            <input type="checkbox" id="fillPolygon"><br>
+        </div>
+        <div>
+            Show Polygon with Curve:
+        </div>
+        <div>
+            <input type="checkbox" id="showPolygon" checked="true"><br>
+        </div>
+    </div>
+    <br>
+    <button id="saveShapeButton">Save Shape</button>
+    <input type="file" id="fileInput"/>
+    <p>Choose Number of Iterations:</p>
     <div id="iterationWrapper">
         <input type="range" min="0" max="7" value="2" class="slider" id="sliderNumber">
         <input type="number" id="formNumber" name="quantity" min="0" max="100" value="2">
     </div>
     <div>
 
-    <button id = "Button1">Render Polygon</button>
+    <button id = "curveButton">Koch Curve</button>
     <button id = "resetPolygon">Reset Polygon</button>
     </div>
         
 </div>
 </div>
-
-
-
 
 </body>
 </html>

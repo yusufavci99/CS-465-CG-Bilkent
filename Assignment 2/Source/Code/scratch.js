@@ -98,6 +98,13 @@ let pointyPrism = [
     vec4(-0.2, 0.0, -0.2, 1.0),
 ]
 
+let ground = [
+    vec4(-1.0, 0.0, -1.0, 1.0),
+    vec4(1.0, 0.0, -1.0, 1.0),
+    vec4(1.0, 0.0, 1.0, 1.0),
+    vec4(-1.0, 0.0, 1.0, 1.0),
+]
+
 var torsoId = 0;
 var headId  = 1;
 var head1Id = 1;
@@ -191,7 +198,7 @@ window.onload = function init() {
     let aspectRatio = canvas.clientWidth / canvas.clientHeight;
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.68, 0.85, 0.7, 1.0 );
     gl.enable( gl.DEPTH_TEST ); 
     
     //
@@ -220,9 +227,8 @@ window.onload = function init() {
     // Create A cube and use it multiple times
     cube();
 
-    pointsArray = pointsArray.concat(torsoVertices);
-    pointsArray = pointsArray.concat(pointyPrism);
-    pointsArray = pointsArray.concat(wing);
+    // PointArray 24, +Torso 98, +pointyPrism 104, +wing 111, +ground 115
+    pointsArray = pointsArray.concat(torsoVertices, pointyPrism, wing, ground);
         
     // Vertex Buffer
     vBuffer = gl.createBuffer();
@@ -235,7 +241,13 @@ window.onload = function init() {
     gl.enableVertexAttribArray( vPosition );
 
     // Color Yoktu Kodda Gecici Olarak 50 tane yesil color koydum buffera. Poligonlarla birlikte color eklenmesi lazim.
-    let colors = Array(100).fill(vec4(0.0,1.0,0.0,1.0));
+    let colors = Array(24).fill(vec4(0.0,.0,0.0,1.0));
+    let torsoColors = Array(98-24).fill(vec4(0.0,0.0,0.0,1.0));
+    let pointyColors = Array(104-98).fill(vec4(0.1,0.0,0.0,1.0));
+    let wingColors = Array(111-104).fill(vec4(0.7,0.1,0.1,1.0));
+    let groundColors = Array(115-111).fill(vec4(0.0,1.0,0.4,1.0));
+    colors = colors.concat(torsoColors, pointyColors, wingColors, groundColors);
+
     let cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
@@ -411,7 +423,17 @@ var render = function() {
     }
 	for(i=0; i < numNodes; i++) initNodes(i);
 
-	traverse(torsoId);
+    traverse(torsoId);
+    
+    drawGround();
+}
+
+function drawGround() {
+	instanceMatrix = mult(modelViewMatrix, translate(0.0, -5.0, 0.0) );
+    instanceMatrix = mult(instanceMatrix, scale4( 20, 20, 20));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    
+    gl.drawArrays(gl.TRIANGLE_FAN, 111, 4);
 }
 
 function ultimatron( arrayx, heightI, widthI) {

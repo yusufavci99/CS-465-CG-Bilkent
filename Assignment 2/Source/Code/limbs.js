@@ -80,14 +80,16 @@ function initNodes(Id) {
         
         case leftUpperLegId:
         
-        m = translate(-(torsoWidth+upperLegWidth), 0.1*upperLegHeight, 0.0);
+        m = translate(-(torsoWidth+upperLegWidth) + 0.4, 0.3*upperLegHeight, 0.0);
+        m = mult(m, rotate(-20, 0, 0, 1) );
         m = mult(m , rotate(theta[leftUpperLegId], 1, 0, 0));
         figure[leftUpperLegId] = createNode( m, leftUpperLeg, rightUpperLegId, leftLowerLegId );
         break;
 
         case rightUpperLegId:
         
-        m = translate(torsoWidth+upperLegWidth, 0.1*upperLegHeight, 0.0);
+        m = translate(torsoWidth+upperLegWidth - 0.4, 0.3*upperLegHeight, 0.0);
+        m = mult(m, rotate(20, 0, 0, 1) );
         m = mult(m, rotate(theta[rightUpperLegId], 1, 0, 0));
         figure[rightUpperLegId] = createNode( m, rightUpperLeg, leftUpperMiddleArmId, rightLowerLegId );
         break;
@@ -179,6 +181,7 @@ function initNodes(Id) {
         case leftLowerLegId:
 
         m = translate(0.0, upperLegHeight, 0.0);
+        m = mult(m, rotate(-20, 0, 0, 1) );
         m = mult(m, rotate(theta[leftLowerLegId], 1, 0, 0));
         figure[leftLowerLegId] = createNode( m, leftLowerLeg, null, null );
         break;
@@ -186,6 +189,7 @@ function initNodes(Id) {
         case rightLowerLegId:
 
         m = translate(0.0, upperLegHeight, 0.0);
+        m = mult(m, rotate(20, 0, 0, 1) );
         m = mult(m, rotate(theta[rightLowerLegId], 1, 0, 0));
         figure[rightLowerLegId] = createNode( m, rightLowerLeg, null, null );
         break;
@@ -265,7 +269,7 @@ function rightLowerArm() {
 function  leftUpperLeg() {
 
     instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * upperLegHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale4(upperLegWidth, upperLegHeight, upperLegWidth) );
+    instanceMatrix = mult(instanceMatrix, scale4(upperLegWidth, upperLegHeight, upperLegWidth) );
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
     for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
 }

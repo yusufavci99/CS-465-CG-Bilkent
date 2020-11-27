@@ -19,7 +19,9 @@ void main()
 
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
     //fColor = vec4(vColor.r, 0.5 + ((vPosition.x + vPosition.z + vPosition.y) / 5.0) , vColor.ba);
-    fColor = vec4(0.5 + (gl_Position.x / 10.0), 0.5 + (gl_Position.y / 10.0) , 1.0 - (gl_Position.z - 20.0) / 10.0, 1.0);
+    //fColor = vec4(vColor.x + (gl_Position.x / 10.0), vColor.y + (gl_Position.y / 10.0) , vColor.z - (gl_Position.z - 20.0) / 10.0, 1.0);
+    //fColor = vColor;
+    fColor = vec4(vColor.xy , vColor.z - (gl_Position.z - 20.0) / 30.0, 1.0);
 } 
 </script>
 

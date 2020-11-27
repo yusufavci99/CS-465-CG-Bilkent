@@ -334,6 +334,7 @@ function render() {
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(polygonVertices), gl.STATIC_DRAW );
 
+    console.log(polygonVertices);
     // Set Polygon Color Shader Variable
     gl.uniform4f(fColorPointer, polygonColorRGB.r / 255.0, polygonColorRGB.g / 255.0, polygonColorRGB.b / 255.0, 1.0);
 

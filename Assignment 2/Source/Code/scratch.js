@@ -1,4 +1,4 @@
-
+"use strict";
 var canvas;
 var gl;
 var program;
@@ -24,7 +24,7 @@ var vertices = [
 
 let lemul = 3;
 let legrow = 1.5;
-torsoVertices = [
+let torsoVertices = [
     // Bottom
     vec4(0.0, -0.5, 0.0, 1.0),
     vec4(-0.5, 0.0, 0.0, 1.0),
@@ -89,7 +89,7 @@ var wing = [
     vec4( 0.06, -0.89,  0.0, 1.0 ),
 ]
 
-pointyPrism = [
+let pointyPrism = [
     vec4(0.0, 1.0, 0.0, 1.0),
     vec4(-0.2, 0.0, -0.2, 1.0),
     vec4(0.2, 0.0, -0.2, 1.0),
@@ -142,6 +142,8 @@ var numNodes = 21;
 var numAngles = 11;
 var angle = 0;
 
+var sliders;
+
 var theta = [0, 0, 90, 90, 90, 90, 180, 40, 220, 40, 40];
 var anim = []
 
@@ -157,6 +159,7 @@ var vBuffer;
 var modelViewLoc;
 
 var pointsArray = [];
+var pageInfo;
 
 //-------------------------------------------
 
@@ -174,14 +177,18 @@ function traverse(Id) {
 
 // Runs On Page Creation
 window.onload = function init() {
+    pageInfo = {
+        canvas: document.getElementById( "gl-canvas" ),
+        keyframe: document.getElementById("keyframes"),
+    }
 
     // Get WebGL canvas
-    canvas = document.getElementById( "gl-canvas" );
+    canvas = pageInfo.canvas;
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
     
-    aspectRatio = canvas.clientWidth / canvas.clientHeight;
+    let aspectRatio = canvas.clientWidth / canvas.clientHeight;
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
@@ -228,8 +235,8 @@ window.onload = function init() {
     gl.enableVertexAttribArray( vPosition );
 
     // Color Yoktu Kodda Gecici Olarak 50 tane yesil color koydum buffera. Poligonlarla birlikte color eklenmesi lazim.
-    colors = Array(100).fill(vec4(0.0,1.0,0.0,1.0));
-    cBuffer = gl.createBuffer();
+    let colors = Array(100).fill(vec4(0.0,1.0,0.0,1.0));
+    let cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
     gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
 
@@ -237,59 +244,116 @@ window.onload = function init() {
     gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
     
-    document.getElementById("slider0").onchange = function() {
-        theta[torsoId] = parseFloat( event.srcElement.value );
+    // Sliders
+
+    sliders = [
+        document.getElementById("slider0"), // 0
+        document.getElementById("slider1"), // 1
+        document.getElementById("slider2"), // 2
+        document.getElementById("slider3"), // 3
+        document.getElementById("slider4"), // 4
+        document.getElementById("slider5"), // 5
+        document.getElementById("slider6"), // 6
+        document.getElementById("slider7"), // 7
+        document.getElementById("slider8"), // 8
+        document.getElementById("slider9"), // 9
+        document.getElementById("slider10"), // 10
+    ]
+
+    sliders[0].oninput = (event) => {
+        theta[torsoId] = parseFloat( event.target.value );
         initNodes(torsoId);
     };
-    document.getElementById("slider1").onchange = function() {
-        theta[head1Id] = parseFloat( event.srcElement.value );
+
+    sliders[1].oninput = (event) => {
+        theta[head1Id] = parseFloat( event.target.value );
         initNodes(head1Id);
     };
 
-    document.getElementById("slider2").onchange = function() {
-         theta[leftUpperArmId] = parseFloat( event.srcElement.value );
+    sliders[2].oninput = (event) => {
+         theta[leftUpperArmId] = parseFloat( event.target.value );
          initNodes(leftUpperArmId);
     };
-    document.getElementById("slider3").onchange = function() {
-         theta[leftLowerArmId] =  parseFloat( event.srcElement.value );
+    sliders[3].oninput = (event) => {
+         theta[leftLowerArmId] =  parseFloat( event.target.value );
          initNodes(leftLowerArmId);
     };
      
-    document.getElementById("slider4").onchange = function() {
-        theta[rightUpperArmId] = parseFloat( event.srcElement.value );
+    sliders[4].oninput = (event) => {
+        theta[rightUpperArmId] = parseFloat( event.target.value );
         initNodes(rightUpperArmId);
     };
-    document.getElementById("slider5").onchange = function() {
-         theta[rightLowerArmId] =  parseFloat( event.srcElement.value );
+    sliders[5].oninput = (event) => {
+         theta[rightLowerArmId] =  parseFloat( event.target.value );
          initNodes(rightLowerArmId);
     };
-    document.getElementById("slider6").onchange = function() {
-        theta[leftUpperLegId] = parseFloat( event.srcElement.value );
+    sliders[6].oninput = (event) => {
+        theta[leftUpperLegId] = parseFloat( event.target.value );
         initNodes(leftUpperLegId);
     };
-    document.getElementById("slider7").onchange = function() {
-         theta[leftLowerLegId] = parseFloat( event.srcElement.value );
+    sliders[7].oninput = (event) => {
+         theta[leftLowerLegId] = parseFloat( event.target.value );
          initNodes(leftLowerLegId);
     };
-    document.getElementById("slider8").onchange = function() {
-         theta[rightUpperLegId] =  parseFloat( event.srcElement.value );
+    sliders[8].oninput = (event) => {
+         theta[rightUpperLegId] =  parseFloat( event.target.value );
          initNodes(rightUpperLegId);
     };
-    document.getElementById("slider9").onchange = function() {
-        theta[rightLowerLegId] = parseFloat( event.srcElement.value );
+    sliders[9].oninput = (event) => {
+        theta[rightLowerLegId] = parseFloat( event.target.value );
         initNodes(rightLowerLegId);
     };
-    document.getElementById("slider10").onchange = function() {
-         theta[head2Id] = parseFloat( event.srcElement.value );
+    sliders[10].oninput = (event) => {
+         theta[head2Id] = parseFloat( event.target.value );
          initNodes(head2Id);
     };
-	document.getElementById("add_keyframe").onclick = function() {
-         anim.push([...theta])
-		 console.log("anim length = ", anim.length, "theta length = ", theta.length)
+	document.getElementById("add_keyframe").onclick = () => {
+
+        anim.push([...theta]);
+        console.log("anim length = ", anim.length, "theta length = ", theta.length);
+        
+        createKeyframeDiv(anim.length - 1);
     };
-	document.getElementById("play_anim").onclick = function() {
-		if (anim.length > 0)
-			playing = !playing
+
+    function createKeyframeDiv(frameId) {
+        let keyframeDiv = document.createElement("div");
+        keyframeDiv.className = "keyframeDiv";
+        let keyframeText = document.createElement("p");
+        keyframeText.innerText = "" + anim[anim.length - 1];
+        let removeKeyframeBtn = document.createElement("button");
+        removeKeyframeBtn.innerText = "Remove";
+
+        removeKeyframeBtn.onclick = () => {
+            alert("Removing " + frameId);
+            anim.splice(frameId,1);
+            animToHTML();
+        };
+
+        keyframeDiv.appendChild(keyframeText);
+        keyframeDiv.appendChild(removeKeyframeBtn);
+        pageInfo.keyframe.appendChild(keyframeDiv);
+    }
+
+    function animToHTML() {
+        // Clear and Recreate
+        pageInfo.keyframe.innerHTML = "";
+        for( let animCnt = 0; animCnt < anim.length; animCnt++) {
+            createKeyframeDiv(animCnt);
+        }
+    }
+
+    let animButtonText = ["Replay Animation", "Stop Animation"];
+
+	document.getElementById("play_anim").onclick = () => {
+		if (anim.length > 0) {
+            playing = !playing
+            if(playing) {
+                document.getElementById("play_anim").value = animButtonText[1];
+            }
+            else {
+                document.getElementById("play_anim").value = animButtonText[0];
+            }
+        }
 		for( let i = 0; i < anim.length; i++ )
 			console.log(anim[i])
     };
@@ -330,19 +394,21 @@ var render = function() {
 	gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
 
-	let anim_index = 0
-	let anim_offset = 0
-	let progress = ( elapsed / 1000 ) % anim.length
+	let anim_index = 0;
+	let anim_offset = 0;
+	let progress = ( elapsed / 1000 ) % anim.length;
 
 	if (playing) {
-		anim_index = Math.floor(progress)
-		anim_offset = progress - Math.floor(progress)
-		console.log("p=", progress, "i=", anim_index, "o=", anim_offset)
+		anim_index = Math.floor(progress);
+		anim_offset = progress - Math.floor(progress);
+		console.log("p=", progress, "i=", anim_index, "o=", anim_offset);
 		for( let i = 0; i < theta.length; i++ ) {
-			theta[i] = anim[anim_index][i] * (1-anim_offset) + anim[ (anim_index + 1) % anim.length][i] * (anim_offset)
+            theta[i] = anim[anim_index][i] * (1-anim_offset) + anim[ (anim_index + 1) % anim.length][i] * (anim_offset);
+
+            sliders[i].children[0].value = theta[i];
+
 		}
-	}
-	theta[1] = theta[1] + 1.0;
+    }
 	for(i=0; i < numNodes; i++) initNodes(i);
 
 	traverse(torsoId);

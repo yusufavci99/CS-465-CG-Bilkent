@@ -53,3 +53,12 @@ body {
     background: #4CAF50;
     cursor: pointer;
 }
+
+.keyframeDiv {
+    display: flex;
+    gap: 5px;
+}
+
+#keyframeWrapper {
+    min-width: 22%;
+}

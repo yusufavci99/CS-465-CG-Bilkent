@@ -115,22 +115,23 @@ void main()
             />
             180
             </div><br/>
-
-            <div id="Add keyframe">
-            right lower leg angle -180 <input id="slide" type="range"
-            min="-180" max="180" step="10" value="0"
-            />
-            180
+            
+            <div>
+                <input id="add_keyframe" type="button" value="Add Keyframe"/>
             </div><br/>
             
             <div>
-                <input id="add_keyframe" type="button" value="add keyframe"/>
-            </div><br/>
-            
-            <div>
-                <input id="play_anim" type="button" value="play anim"/>
+                <input id="play_anim" type="button" value="Play Animation"/>
             </div><br/>
         </div>
+
+        <div id="keyframeWrapper">
+            <h2>Keyframes</h2>
+            <div id = "keyframes">
+                
+            </div>
+        </div>
+        
         <div>
             <canvas id="gl-canvas" width="512"" height="512">
                 Oops ... your browser doesn't support the HTML5 canvas element

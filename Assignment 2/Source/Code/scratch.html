@@ -37,6 +37,7 @@ void main()
 <script type="text/javascript" src="../Common/webgl-utils.js"></script>
 <script type="text/javascript" src="../Common/InitShaders.js"></script>
 <script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="limbs.js"></script>
 <script type="text/javascript" src="scratch.js"></script>
 
 <div id="slider0">
@@ -108,6 +109,22 @@ right lower leg angle -180 <input id="slide" type="range"
   />
  180
 </div><br/>
+
+<div id="Add keyframe">
+right lower leg angle -180 <input id="slide" type="range"
+ min="-180" max="180" step="10" value="0"
+  />
+ 180
+</div><br/>
+
+<div>
+ <input id="add_keyframe" type="button" value="add keyframe"/>
+</div><br/>
+
+<div>
+ <input id="play_anim" type="button" value="play anim"/>
+</div><br/>
+
 
 
 <body>

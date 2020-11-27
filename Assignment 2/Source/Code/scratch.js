@@ -308,12 +308,36 @@ window.onload = function init() {
          initNodes(head2Id);
     };
 	document.getElementById("add_keyframe").onclick = () => {
-
-        anim.push([...theta]);
-        console.log("anim length = ", anim.length, "theta length = ", theta.length);
-        
+        anim.push([...theta]);        
         createKeyframeDiv(anim.length - 1);
     };
+	
+	// Saving Animation
+    document.getElementById("saveAnimButton").addEventListener("click", () => {
+		download(JSON.stringify({
+            animation: anim
+        }),
+        "anim.txt", "text/plain");
+    })
+
+    // Loading Animation
+    const inputElement = document.getElementById("fileInput");
+    inputElement.addEventListener("change", handleFiles, false);
+    function handleFiles() {
+
+        var r = new FileReader();
+        r.onload = (function(file) {
+            return function(e) {
+                var contents = e.target.result;
+                
+                let loadedContent = JSON.parse(contents);
+                // Load Animation.
+                anim = loadedContent.animation;
+				animToHTML()
+            };
+        })(this.files[0]);
+        r.readAsText(this.files[0]);
+    }
 
     function createKeyframeDiv(frameId) {
         let keyframeDiv = document.createElement("div");
@@ -401,7 +425,6 @@ var render = function() {
 	if (playing) {
 		anim_index = Math.floor(progress);
 		anim_offset = progress - Math.floor(progress);
-		console.log("p=", progress, "i=", anim_index, "o=", anim_offset);
 		for( let i = 0; i < theta.length; i++ ) {
             theta[i] = anim[anim_index][i] * (1-anim_offset) + anim[ (anim_index + 1) % anim.length][i] * (anim_offset);
 
@@ -412,6 +435,15 @@ var render = function() {
 	for(i=0; i < numNodes; i++) initNodes(i);
 
 	traverse(torsoId);
+}
+
+//DOWNLOAD
+function download(content, fileName, contentType) {
+    var a = document.createElement("a");
+    var file = new Blob([content], {type: contentType});
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
 }
 
 function ultimatron( arrayx, heightI, widthI) {

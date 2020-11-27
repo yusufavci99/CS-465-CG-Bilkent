@@ -165,7 +165,7 @@ function initNodes(Id) {
         case rightMiddleArmId:
 
         m = translate(0.0, upperArmHeight, 0.0);
-        m = mult(m, rotate(0, 1, 0, 0));
+        m = mult(m, rotate(50, 1, 0, 0));
         figure[rightMiddleArmId] = createNode( m, rightMiddleArm, null, rightLowerArmId );
         break;
         

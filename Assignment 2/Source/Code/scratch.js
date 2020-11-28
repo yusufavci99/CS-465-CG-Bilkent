@@ -148,20 +148,24 @@ var leftWingId = 18;
 var rightWingId = 19;
 
 var torsoHeight = 6.0;
-var torsoWidth = 0.8;
-var upperArmHeight = 3.0;
-var lowerArmHeight = 2.0;
+var torsoWidth = 1.7;
+var upperArmHeight = 2.0;
+var lowerArmHeight = 3.5;
 var upperArmWidth  = 0.5;
 var lowerArmWidth  = 0.5;
 var upperLegWidth  = 0.5;
 var lowerLegWidth  = 0.5;
 var lowerLegHeight = 2.0;
 var upperLegHeight = 3.0;
-var headHeight = 1.5;
+var middleArmHeight = 3.0;
+var middleArmWidth = 0.5;
+var headHeight = 2.0;
 var headWidth = 1.0;
-var middleMiddleArmHeight = 1.5;
-var middleMiddleArmWidth = 1.0;
-var lowerMiddleArmHeight = 5;
+var upperMiddleArmHeight = 2.0;
+var upperMiddleArmWidth = 0.5;
+var middleMiddleArmHeight = 2.5;
+var middleMiddleArmWidth = 0.5;
+var lowerMiddleArmHeight = 3;
 var lowerMiddleArmWidth = 1.0;
 
 var numNodes = 20;
@@ -184,7 +188,7 @@ var theta = [ 0, 0,
     100, 40, -90,
     100, 40, -90, 
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0
+    0, 0, 40, -40, 0, 0,
 ];
 
 var anim = []
@@ -278,7 +282,7 @@ window.onload = function init() {
     // Color Yoktu Kodda Gecici Olarak 50 tane yesil color koydum buffera. Poligonlarla birlikte color eklenmesi lazim.
     let colors = Array(24).fill(vec4(0.0,.0,0.0,1.0));
     let torsoColors = Array(98-24).fill(vec4(0.0,0.0,0.0,1.0));
-    let pointyColors = Array(104-98).fill(vec4(0.1,0.0,0.0,1.0));
+    let pointyColors = Array(104-98).fill(vec4(0.4,0.4,0.4,1.0));
     let wingColors = Array(111-104).fill(vec4(0.7,0.1,0.1,1.0));
     let groundColors = Array(115-111).fill(vec4(0.0,1.0,0.4,1.0));
     let eyeColors = Array(119-115).fill(vec4(0.4,0.6,0.9,1.0));

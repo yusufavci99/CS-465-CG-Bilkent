@@ -105,31 +105,50 @@ let ground = [
     vec4(-1.0, 0.0, 1.0, 1.0),
 ]
 
-var torsoId = 0;
+let eye = [
+    vec4(-1.0, 0.0, -1.0, 1.0),
+    vec4(1.0, 0.0, -1.0, 1.0),
+    vec4(1.0, 0.0, 1.0, 1.0),
+    vec4(-1.0, 0.0, 1.0, 1.0),
+]
+
+var torsoId  = 0;
+var translateXId = 20;
+var translateYId = 21;
+var translateZId = 22;
+var torsoXId = 23;
+var torsoYId = 24;
+var torsoZId = 25;
 var headId  = 1;
-var head1Id = 1;
-var head2Id = 10;
+var head1Id = 26;
+var head2Id = 27;
 var leftUpperArmId = 2;
+var leftUpperArm2Id = 28;
 var leftLowerArmId = 3;
 var rightUpperArmId = 4;
+var rightUpperArm2Id = 29;
 var rightLowerArmId = 5;
 var leftUpperLegId = 6;
+var leftUpperLeg2Id = 30;
 var leftLowerLegId = 7;
 var rightUpperLegId = 8;
+var rightUpperLeg2Id = 31;
 var rightLowerLegId = 9;
-var leftMiddleArmId = 11;
-var rightMiddleArmId = 12;
-var leftUpperMiddleArmId = 13;
-var leftMiddleMiddleArmId = 14;
-var leftLowerMiddleArmId = 15;
-var rightUpperMiddleArmId = 16;
-var rightMiddleMiddleArmId = 17;
-var rightLowerMiddleArmId = 18;
-var leftWingId = 19;
-var rightWingId = 20;
+var leftMiddleArmId = 10;
+var rightMiddleArmId = 11;
+var leftUpperMiddleArmId = 12;
+var leftUpperMiddleArm2Id = 32;
+var leftMiddleMiddleArmId = 13;
+var leftLowerMiddleArmId = 14;
+var rightUpperMiddleArmId = 15;
+var rightUpperMiddleArm2Id = 33;
+var rightMiddleMiddleArmId = 16;
+var rightLowerMiddleArmId = 17;
+var leftWingId = 18;
+var rightWingId = 19;
 
-var torsoHeight = 5.0;
-var torsoWidth = 1.0;
+var torsoHeight = 6.0;
+var torsoWidth = 0.8;
 var upperArmHeight = 3.0;
 var lowerArmHeight = 2.0;
 var upperArmWidth  = 0.5;
@@ -145,13 +164,29 @@ var middleMiddleArmWidth = 1.0;
 var lowerMiddleArmHeight = 5;
 var lowerMiddleArmWidth = 1.0;
 
-var numNodes = 21;
+var numNodes = 20;
 var numAngles = 11;
 var angle = 0;
 
 var sliders;
 
-var theta = [0, 0, 90, 90, 90, 90, 180, 40, 220, 40, 40];
+var theta = [ 0, 0,
+    90, // Left Upper Arm 
+    25, // Left Lower Arm
+    90, // Right Upper Arm
+    25, // Right Lower Arm 
+    180, // Left Upper Leg
+    0, 
+    180, // Right Upper Leg
+    0, 
+    70, // Left Middle Arm
+    70, // Right Middle Arm
+    100, 40, -90,
+    100, 40, -90, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0
+];
+
 var anim = []
 
 var numVertices = 24;
@@ -228,7 +263,7 @@ window.onload = function init() {
     cube();
 
     // PointArray 24, +Torso 98, +pointyPrism 104, +wing 111, +ground 115
-    pointsArray = pointsArray.concat(torsoVertices, pointyPrism, wing, ground);
+    pointsArray = pointsArray.concat(torsoVertices, pointyPrism, wing, ground, eye);
         
     // Vertex Buffer
     vBuffer = gl.createBuffer();
@@ -246,7 +281,8 @@ window.onload = function init() {
     let pointyColors = Array(104-98).fill(vec4(0.1,0.0,0.0,1.0));
     let wingColors = Array(111-104).fill(vec4(0.7,0.1,0.1,1.0));
     let groundColors = Array(115-111).fill(vec4(0.0,1.0,0.4,1.0));
-    colors = colors.concat(torsoColors, pointyColors, wingColors, groundColors);
+    let eyeColors = Array(119-115).fill(vec4(0.4,0.6,0.9,1.0));
+    colors = colors.concat(torsoColors, pointyColors, wingColors, groundColors, eyeColors);
 
     let cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
@@ -259,66 +295,89 @@ window.onload = function init() {
     // Sliders
 
     sliders = [
-        document.getElementById("slider0"), // 0
-        document.getElementById("slider1"), // 1
-        document.getElementById("slider2"), // 2
-        document.getElementById("slider3"), // 3
-        document.getElementById("slider4"), // 4
-        document.getElementById("slider5"), // 5
-        document.getElementById("slider6"), // 6
-        document.getElementById("slider7"), // 7
-        document.getElementById("slider8"), // 8
-        document.getElementById("slider9"), // 9
-        document.getElementById("slider10"), // 10
+        document.getElementById("translateSliderX"), // 0
+        document.getElementById("translateSliderY"), // 1
+        document.getElementById("translateSliderZ"), // 2
+        document.getElementById("torsoSliderX"), // 3
+        document.getElementById("torsoSliderY"), // 4
+        document.getElementById("torsoSliderZ"), // 5
+        document.getElementById("headSliderX"), // 6
+        document.getElementById("headSliderY"), // 7
+        document.getElementById("leftUpperArmSlider"), // 8
+        document.getElementById("leftMiddleArmSlider"), // 9
+        document.getElementById("leftLowerArmSlider"), // 10
+        document.getElementById("rightUpperArmSlider"), // 11
+        document.getElementById("rightMiddleArmSlider"), // 12
+        document.getElementById("rightLowerArmSlider"), // 13
+        document.getElementById("leftUpperMiddleArmSlider"), // 14
+        document.getElementById("leftMiddleMiddleArmSlider"), // 15
+        document.getElementById("leftLowerMiddleArmSlider"), // 16
+        document.getElementById("rightUpperMiddleArmSlider"), // 17
+        document.getElementById("rightMiddleMiddleArmSlider"), // 18
+        document.getElementById("rightLowerMiddleArmSlider"), // 19
+        document.getElementById("leftUpperLegSlider"), // 20
+        document.getElementById("leftLowerLegSlider"), // 21
+        document.getElementById("rightUpperLegSlider"), // 22
+        document.getElementById("rightLowerLegSlider"), // 23
+        document.getElementById("leftWingSlider"), // 24
+        document.getElementById("rightWingSlider"), // 25
+        // Additional
+        document.getElementById("leftUpperArm2Slider"), // 26
+        document.getElementById("rightUpperArm2Slider"), // 27
+        document.getElementById("leftUpperMiddleArm2Slider"), // 28
+        document.getElementById("rightUpperMiddleArm2Slider"), // 29
+        document.getElementById("leftUpperLeg2Slider"), // 30
+        document.getElementById("rightUpperLeg2Slider"), // 31
+
     ]
 
-    sliders[0].oninput = (event) => {
-        theta[torsoId] = parseFloat( event.target.value );
-        initNodes(torsoId);
-    };
+    let sliderToElem = [
+        translateXId, // 0
+        translateYId, // 1
+        translateZId, // 2
+        torsoXId, // 3
+        torsoYId, // 4
+        torsoZId, // 5
+        head1Id, // 6
+        head2Id, // 7
+        leftUpperArmId, // 8
+        leftMiddleArmId, // 9
+        leftLowerArmId, // 10
+        rightUpperArmId, // 11
+        rightMiddleArmId, // 12
+        rightLowerArmId, // 13
+        leftUpperMiddleArmId, // 14
+        leftMiddleMiddleArmId, // 15
+        leftLowerMiddleArmId, // 16
+        rightUpperMiddleArmId, // 17
+        rightMiddleMiddleArmId, // 18
+        rightLowerMiddleArmId, // 19
+        leftUpperLegId, // 20
+        leftLowerLegId, // 21
+        rightUpperLegId, // 22
+        rightLowerLegId, // 23
+        leftWingId, // 24
+        rightWingId, // 25
+        leftUpperArm2Id, // 26
+        rightUpperArm2Id, // 27
+        leftUpperMiddleArm2Id, // 28
+        rightUpperMiddleArm2Id, // 29
+        leftUpperLeg2Id, // 30
+        rightUpperLeg2Id, // 31
+    ];
 
-    sliders[1].oninput = (event) => {
-        theta[head1Id] = parseFloat( event.target.value );
-        initNodes(head1Id);
-    };
+    function setSlider(sliderNum) {
+        console.log(sliderNum);
+        sliders[sliderNum].oninput = (event) => {
+            theta[sliderToElem[sliderNum]] = parseFloat( event.target.value );
+            initNodes(sliderToElem[sliderNum]);
+        };
+    }
 
-    sliders[2].oninput = (event) => {
-         theta[leftUpperArmId] = parseFloat( event.target.value );
-         initNodes(leftUpperArmId);
-    };
-    sliders[3].oninput = (event) => {
-         theta[leftLowerArmId] =  parseFloat( event.target.value );
-         initNodes(leftLowerArmId);
-    };
-     
-    sliders[4].oninput = (event) => {
-        theta[rightUpperArmId] = parseFloat( event.target.value );
-        initNodes(rightUpperArmId);
-    };
-    sliders[5].oninput = (event) => {
-         theta[rightLowerArmId] =  parseFloat( event.target.value );
-         initNodes(rightLowerArmId);
-    };
-    sliders[6].oninput = (event) => {
-        theta[leftUpperLegId] = parseFloat( event.target.value );
-        initNodes(leftUpperLegId);
-    };
-    sliders[7].oninput = (event) => {
-         theta[leftLowerLegId] = parseFloat( event.target.value );
-         initNodes(leftLowerLegId);
-    };
-    sliders[8].oninput = (event) => {
-         theta[rightUpperLegId] =  parseFloat( event.target.value );
-         initNodes(rightUpperLegId);
-    };
-    sliders[9].oninput = (event) => {
-        theta[rightLowerLegId] = parseFloat( event.target.value );
-        initNodes(rightLowerLegId);
-    };
-    sliders[10].oninput = (event) => {
-         theta[head2Id] = parseFloat( event.target.value );
-         initNodes(head2Id);
-    };
+    for( let sliderCnt = 0; sliderCnt < sliderToElem.length; sliderCnt++) {
+        setSlider(sliderCnt);
+    }
+
 	document.getElementById("add_keyframe").onclick = () => {
         anim.push([...theta]);        
         createKeyframeDiv(anim.length - 1);
@@ -440,8 +499,7 @@ var render = function() {
 		for( let i = 0; i < theta.length; i++ ) {
             theta[i] = anim[anim_index][i] * (1-anim_offset) + anim[ (anim_index + 1) % anim.length][i] * (anim_offset);
 
-            sliders[i].children[0].value = theta[i];
-
+            animateSlider(i, theta[i]);
 		}
     }
 	for(i=0; i < numNodes; i++) initNodes(i);
@@ -481,3 +539,47 @@ function ultimatron( arrayx, heightI, widthI) {
     }
     return arrayx.concat(spx);
 }
+
+function animateSlider(thetaIndex, newValue) {
+    let sliderIndex = thetaToSlider[thetaIndex];
+    if (sliderIndex != null) {
+        sliders[sliderIndex].children[0].value = newValue;
+    }
+}
+
+var thetaToSlider = [
+    null, // torsoId 0
+    null, // 1
+    8, // 2
+    10, // 3 leftLowerArmId
+    11, // 4 RightUpperArm
+    13, // rightLowerArmId = 5
+    20, // leftUpperLegId = 6;
+    21, // leftLowerLegId = 7;
+    22, // rightUpperLegId = 8;
+    23, // rightLowerLegId = 9;
+    9, // leftMiddleArmId = 10;
+    12, // var rightMiddleArmId = 11;
+    14, // var leftUpperMiddleArmId = 12;
+    15, // var leftMiddleMiddleArmId = 13;
+    16, // var leftLowerMiddleArmId = 14;
+    17, // var rightUpperMiddleArmId = 15;
+    18, // var rightMiddleMiddleArmId = 16;
+    19, // var rightLowerMiddleArmId = 17;
+    24, // var leftWingId = 18;
+    25, // var rightWingId = 19;
+    0, // var translateXId = 20;
+    1, // var translateYId = 21;
+    2, // var translateZId = 22;
+    3, // var torsoXId = 23;
+    4, // var torsoYId = 24;
+    5, // var torsoZId = 25;
+    6,// var head1Id = 26;
+    7, // var head2Id = 27;
+    26, // var leftUpperArm2Id = 28;
+    27, // var rightUpperArm2Id = 29;
+    30, // var leftUpperLeg2Id = 30;
+    31, // var rightUpperLeg2Id = 31;
+    28,// var leftUpperMiddleArm2Id = 32;
+    29, // var rightUpperMiddleArm2Id = 33;
+]

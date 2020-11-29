@@ -48,11 +48,12 @@ void main()
 
 <body>
     <div id = "pageWrapper">
-        <div>
+        <div id = "leftSide">
             <div class = "mdl-tabs mdl-js-tabs">
                 <div class = "mdl-tabs__tab-bar">
                     <a href = "#tab1-panel" class = "mdl-tabs__tab is-active">Other</a>
-                    <a href = "#tab2-panel" class = "mdl-tabs__tab">Arms</a>
+                    <a href = "#tab2-panel" class = "mdl-tabs__tab">Arms - I</a>
+                    <a href = "#tab2b-panel" class = "mdl-tabs__tab">Arms - II</a>
                     <a href = "#tab3-panel" class = "mdl-tabs__tab">Legs</a>
                 </div>
                 
@@ -126,7 +127,10 @@ void main()
                         Right Lower Arm Angle -180 <input id="slide" type="range"
                         min="-180" max="180" step="10" value="0"/> 180
                     </div><br/>
-                    <!-- Middle Arm -->
+                </div>
+
+                <!-- Middle Arm -->
+                <div class = "mdl-tabs__panel" id = "tab2b-panel">
                     <div id="leftUpperMiddleArmSlider">
                         Left Upper Middle Arm X Angle -180 <input id="slide" type="range"
                         min="-180" max="180" step="10" value="0"/> 180
@@ -161,6 +165,7 @@ void main()
                     </div><br/>
                 </div>
                 
+                <!-- Leg & Wing -->
                 <div class = "mdl-tabs__panel" id = "tab3-panel">
                     <div id="leftUpperLegSlider">
                         Left Upper Leg X Angle 0 <input id="slide" type="range"
@@ -224,7 +229,7 @@ void main()
         </div>
         
         <div>
-            <canvas id="gl-canvas" width="512"" height="512">
+            <canvas id="gl-canvas" width="560"" height="560">
                 Oops ... your browser doesn't support the HTML5 canvas element
             </canvas>
         </div>

@@ -221,13 +221,18 @@ function initNodes(Id) {
 function torso() {
 
     instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.0, 0.0) );
-    instanceMatrix = mult(instanceMatrix, scale4( torsoWidth, torsoHeight / 5, torsoWidth));
+    instanceMatrix = mult(instanceMatrix, scale4( torsoWidth, torsoHeight / 5, torsoWidth * 3/4));
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
 
     gl.drawArrays(gl.TRIANGLE_FAN, 24, 10);
     for(let cnt = 34; cnt < 95;cnt += 4) {
         gl.drawArrays(gl.TRIANGLE_FAN, cnt, 4);
     }
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 5.5, 0.0) );
+    instanceMatrix = mult(instanceMatrix, scale4( 10, 2, 10 * 3/4));
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLE_FAN, 119, 10);
+
 }
 
 function head() {

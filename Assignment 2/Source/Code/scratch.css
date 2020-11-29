@@ -55,10 +55,24 @@ body {
 }
 
 .keyframeDiv {
-    display: flex;
-    gap: 5px;
+    /* display: flex;
+    flex-flow: wrap;
+    gap: 5px; */
+    overflow-wrap: break-word;
 }
 
 #keyframeWrapper {
-    min-width: 22%;
+    width: 30%;
+    /* min-width: 22%;
+    max-width: 30%; */
+}
+
+#leftSide {
+    width: 30%;
+    margin-top: 20px;
+    margin-left: 10px;
+}
+
+#gl-canvas {
+    margin-top: 20px;
 }

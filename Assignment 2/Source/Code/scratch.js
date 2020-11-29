@@ -78,7 +78,7 @@ let torsoVertices = [
     vec4(-Math.sqrt(0.5) * lemul / 2, legrow, -Math.sqrt(0.5) * lemul/ 2, 1.0),
 
 ]
-torsoVertices = ultimatron(torsoVertices, 3, 2);
+torsoVertices = torsoComplete(torsoVertices, 3, 2);
 var wing = [
     vec4( 0.06, 0.7,  0.0, 1.0 ),
     vec4( -0.30, 0.73,  0.0, 1.0 ),
@@ -110,6 +110,20 @@ let eye = [
     vec4(1.0, 0.0, -1.0, 1.0),
     vec4(1.0, 0.0, 1.0, 1.0),
     vec4(-1.0, 0.0, 1.0, 1.0),
+]
+
+let shoulder = [
+    // Bottom
+    vec4(0.0, 0.5, 0.0, 1.0),
+    vec4(-0.5, 0.0, 0.0, 1.0),
+    vec4(-Math.sqrt(0.5) / 2, 0.0, Math.sqrt(0.5) / 2, 1.0),
+    vec4(0.0, 0.0, 0.5, 1.0),
+    vec4(Math.sqrt(0.5) / 2, 0.0, Math.sqrt(0.5) / 2, 1.0),
+    vec4(0.5, 0.0, 0.0, 1.0),
+    vec4(Math.sqrt(0.5) / 2, 0.0, -Math.sqrt(0.5) / 2, 1.0),
+    vec4(0.0, 0.0, -0.5, 1.0),
+    vec4(-Math.sqrt(0.5) / 2, 0.0, -Math.sqrt(0.5) / 2, 1.0),
+    vec4(-0.5, 0.0, 0.0, 1.0),
 ]
 
 var torsoId  = 0;
@@ -267,7 +281,7 @@ window.onload = function init() {
     cube();
 
     // PointArray 24, +Torso 98, +pointyPrism 104, +wing 111, +ground 115
-    pointsArray = pointsArray.concat(torsoVertices, pointyPrism, wing, ground, eye);
+    pointsArray = pointsArray.concat(torsoVertices, pointyPrism, wing, ground, eye, shoulder);
         
     // Vertex Buffer
     vBuffer = gl.createBuffer();
@@ -286,7 +300,8 @@ window.onload = function init() {
     let wingColors = Array(111-104).fill(vec4(0.7,0.1,0.1,1.0));
     let groundColors = Array(115-111).fill(vec4(0.0,1.0,0.4,1.0));
     let eyeColors = Array(119-115).fill(vec4(0.4,0.6,0.9,1.0));
-    colors = colors.concat(torsoColors, pointyColors, wingColors, groundColors, eyeColors);
+    let shoulderColors = Array(129-119).fill(vec4(0.4,0.4,0.4,1.0));
+    colors = colors.concat(torsoColors, pointyColors, wingColors, groundColors, eyeColors, shoulderColors);
 
     let cBuffer = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
@@ -417,6 +432,7 @@ window.onload = function init() {
     function createKeyframeDiv(frameId) {
         let keyframeDiv = document.createElement("div");
         keyframeDiv.className = "keyframeDiv";
+        let textDiv = document.createElement("div");
         let keyframeText = document.createElement("p");
         keyframeText.innerText = "" + anim[anim.length - 1];
         let removeKeyframeBtn = document.createElement("button");
@@ -428,7 +444,8 @@ window.onload = function init() {
             animToHTML();
         };
 
-        keyframeDiv.appendChild(keyframeText);
+        textDiv.appendChild(keyframeText);
+        keyframeDiv.appendChild(textDiv);
         keyframeDiv.appendChild(removeKeyframeBtn);
         pageInfo.keyframe.appendChild(keyframeDiv);
     }
@@ -530,18 +547,18 @@ function download(content, fileName, contentType) {
     a.click();
 }
 
-function ultimatron( arrayx, heightI, widthI) {
-    let spx = []
+function torsoComplete( arrayx, heightI, widthI) {
+    let resultPoinst = []
     for(let i = 10; i < arrayx.length; i += 4) {
-        let anon = arrayx[i + 2];
-        let anan = arrayx[i + 3];
+        let upperPoint1 = arrayx[i + 2];
+        let upperPoint2 = arrayx[i + 3];
 
-        spx.push(anon);
-        spx.push(anan);
-        spx.push(vec4(anan[0] * widthI,anan[1] + heightI, anan[2] * widthI, anan[3]));
-        spx.push(vec4(anon[0] * widthI,anon[1] + heightI, anon[2] * widthI, anon[3]))
+        resultPoinst.push(upperPoint1);
+        resultPoinst.push(upperPoint2);
+        resultPoinst.push(vec4(upperPoint2[0] * widthI,upperPoint2[1] + heightI, upperPoint2[2] * widthI, upperPoint2[3]));
+        resultPoinst.push(vec4(upperPoint1[0] * widthI,upperPoint1[1] + heightI, upperPoint1[2] * widthI, upperPoint1[3]))
     }
-    return arrayx.concat(spx);
+    return arrayx.concat(resultPoinst);
 }
 
 function animateSlider(thetaIndex, newValue) {

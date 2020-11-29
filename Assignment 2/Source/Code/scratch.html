@@ -228,11 +228,16 @@ void main()
             </div>
         </div>
         
-        <div>
+        <div id = "rightPart">
             <canvas id="gl-canvas" width="560"" height="560">
                 Oops ... your browser doesn't support the HTML5 canvas element
             </canvas>
+            <div id="fov">
+                Y-FOV 45 <input id="slide" type="range"
+                min="45" max="180" step="10" value="90"/> 180
+            </div><br/>
         </div>
+
     </div>
 </body>
 </html>

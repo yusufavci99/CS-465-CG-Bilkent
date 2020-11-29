@@ -9,6 +9,7 @@ var modelViewMatrix;
 var instanceMatrix;
 
 var modelViewMatrixLoc;
+var projectionMatrixLoc;
 
 var vertices = [
 
@@ -264,18 +265,18 @@ window.onload = function init() {
     instanceMatrix = mat4();
     
     // Perspective Matrix
-    projectionMatrix = perspective( 90, aspectRatio, 0.1, 200 )
+    projectionMatrix = perspective( 90, aspectRatio, 0.1, 200 );
 
     // ModelViewMatrix
     modelViewMatrix = translate(0, 0,-20);
-    //modelViewMatrix = mult( modelViewMatrix, rotate(0,0,0,1));
 
     // Get ModelViewMatrix locations
     modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix");
+    projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix")
 
     // Load Matrices to the vertex shader
     gl.uniformMatrix4fv( modelViewMatrixLoc, false, flatten(modelViewMatrix) );
-    gl.uniformMatrix4fv( gl.getUniformLocation( program, "projectionMatrix"), false, flatten(projectionMatrix) );
+    gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
     
     // Create A cube and use it multiple times
     cube();
@@ -396,6 +397,11 @@ window.onload = function init() {
     for( let sliderCnt = 0; sliderCnt < sliderToElem.length; sliderCnt++) {
         setSlider(sliderCnt);
     }
+
+    document.getElementById("fov").oninput = (event) => {
+        projectionMatrix = perspective( event.target.value, aspectRatio, 0.1, 200 );
+        gl.uniformMatrix4fv( projectionMatrixLoc, false, flatten(projectionMatrix) );
+    };
 
 	document.getElementById("add_keyframe").onclick = () => {
         anim.push([...theta]);        

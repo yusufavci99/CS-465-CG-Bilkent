@@ -440,12 +440,11 @@ window.onload = function init() {
         keyframeDiv.className = "keyframeDiv";
         let textDiv = document.createElement("div");
         let keyframeText = document.createElement("p");
-        keyframeText.innerText = "" + anim[anim.length - 1];
+        keyframeText.innerText = "Keyframe " + frameId;
         let removeKeyframeBtn = document.createElement("button");
         removeKeyframeBtn.innerText = "Remove";
 
         removeKeyframeBtn.onclick = () => {
-            alert("Removing " + frameId);
             anim.splice(frameId,1);
             animToHTML();
         };
@@ -487,6 +486,7 @@ window.onload = function init() {
 
 var fps, fpsInterval, startTime, now, then;
 var elapsed = 0;
+var animSpeed = 1.2
 var playing = false
 
 // initialize the timer variables and start the animation
@@ -503,7 +503,7 @@ function startAnimating(fps) {
 var render = function() {
 
     now = Date.now();
-    elapsed += now - then;
+    elapsed += animSpeed * (now - then);
 
     // if enough time has elapsed, draw the next frame
 
@@ -520,7 +520,7 @@ var render = function() {
 	let anim_offset = 0;
 	let progress = ( elapsed / 1000 ) % anim.length;
 
-	if (playing) {
+	if (playing && anim.length > 0) {
 		anim_index = Math.floor(progress);
 		anim_offset = progress - Math.floor(progress);
 		for( let i = 0; i < theta.length; i++ ) {

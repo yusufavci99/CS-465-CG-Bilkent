@@ -55,10 +55,9 @@ body {
 }
 
 .keyframeDiv {
-    /* display: flex;
+    display: flex;
     flex-flow: wrap;
-    gap: 5px; */
-    overflow-wrap: break-word;
+    gap: 5px;
 }
 
 #keyframeWrapper {

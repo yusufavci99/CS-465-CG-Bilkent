@@ -387,7 +387,7 @@ window.onload = function init() {
     ];
 
     function setSlider(sliderNum) {
-        console.log(sliderNum);
+        
         sliders[sliderNum].oninput = (event) => {
             theta[sliderToElem[sliderNum]] = parseFloat( event.target.value );
             initNodes(sliderToElem[sliderNum]);
@@ -475,8 +475,6 @@ window.onload = function init() {
                 document.getElementById("play_anim").value = animButtonText[0];
             }
         }
-		for( let i = 0; i < anim.length; i++ )
-			console.log(anim[i])
     };
 
     for(i=0; i<numNodes; i++) initNodes(i);

@@ -1,0 +1,3 @@
+find out how are rays defined
+sphere ray intersetion
+show a sphere by raytracing

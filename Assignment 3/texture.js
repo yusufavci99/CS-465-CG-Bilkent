@@ -2,7 +2,7 @@
 
 "use strict";
 
-var imageSize = 512;
+var imageSize = 256;
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped.
@@ -18,6 +18,7 @@ const blue = vec4(0.0,0.0,1.0,1.0)
 
 const SPHERE = 0
 const TRIANGLE = 1
+const INF = 9999999
 
 
 // Texture coords for quad
@@ -29,8 +30,11 @@ var program;
 var texture;
 var objects = []
 
-var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, clr: red}
-var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), clr: green }
+//these are examples for the objects that are created by the generator
+var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
+var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
+var intersection = { distance: 0, pos: vec3(0.0,0.0,0.0), normal: vec3(0.0,0.0,0.0), material: {clr: green, reflect: 0, refract:0 }, count:0 } //TODO
+var light = { pos: vec3(-20, 0, 20), intensity: 0 } //TODO
 
 
 
@@ -48,9 +52,14 @@ Shade(point, ray)	// return radiance of light leaving
 */
 
 function generate_objects() {
-	for( let i = 0; i < 10; i++ ) {
-		objects.push( { type: SPHERE, center: vec3( Math.random() * 10 - 5, Math.random() * 10 - 5, 20 + Math.random() * 10), radius: 5, 
-			clr: vec4( Math.random(), Math.random(), Math.random(), 1 ) } )
+	for( let i = 0; i < 5; i++ ) {
+		objects.push( { type: SPHERE, center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), radius: Math.random() * 10, 
+			material: { 
+				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+				reflect: 0,
+				refract: 0
+			} 
+		} )
 	}
 }
 
@@ -89,14 +98,13 @@ function object_intersection(p, d, obj ) {
 		let edge2 = subtract( tri.c, tri.a )
 		let n = cross( edge1, edge2 )
 		if ( dot( d, n ) == 0 )
-			return Number.INFINITY 
+			return INF
 		//sign of t might be changed (there was a minus here)
 		let t = ( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
 		/* t = -(p.n + q.n) / d.n */
-		console.log( t )
 		let intersection = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
 		if ( ! point_in_triangle_test( intersection, triangle ) || t < 0 )
-			return Number.INFINITY
+			return INF
 		else
 			return t
 	}
@@ -109,14 +117,16 @@ function object_intersection(p, d, obj ) {
 		//console.log( sphere )
 		//console.log("A: ", A.toPrecision(2), "B: ", B.toPrecision(2), "C: ", C.toPrecision(2),"delta: ", delta.toPrecision(2))
 		if ( delta < 0 ) 
-			return Number.INFINITY 
+			return INF 
 		let t1 = ( -B + Math.sqrt( B*B + 4*A*C ) ) / 2
 		let t2 = ( -B + Math.sqrt( B*B - 4*A*C ) ) / 2
-		return Math.min( t1, t2 )
+		let t = Math.min( t1, t2 )
+		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t) )
+		return { distance: t, pos: pos, normal: pos - sph.center, material: sph.material, count:0 } //TODO 
 	}
 	if( obj.type == SPHERE ) 
 		return sphere_intersection(p, d, obj)
-	else
+	else if ( obj.type == TRIANGLE )
 		return triangle_intersection(p, d, obj)
 }
 
@@ -127,17 +137,48 @@ function closest_ray_surface_intersection(p, d) {
 		return the closest point of intersection to viewer 
 		(also return other info about that point, e.g., surface normal, material properties, etc.)
 	*/
-	objects.sort( (a,b) => { return object_intersection( p, d, a ) > object_intersection( p, d, b ) } )
-	if ( object_intersection( p, d, objects[0] ) )
-		return objects[0]
-	else
-		return null
+	//let sorted = objects.sort( (a,b) => { return object_intersection( p, d, a ) > object_intersection( p, d, b ) } )
+	let closest_dist = INF
+	let selected_inter = null
+	objects.forEach( (o,i) => {
+		let intersection = object_intersection( p, d, o )
+		let dist = intersection.distance
+		if ( dist < closest_dist ) {
+			closest_dist = dist
+			selected_inter = intersection
+		}
+	} )
+	return selected_inter
 }
 
+function reflect( p, d, normal ) {
+	//TODO
+	return ray
+}
+
+function refract( p, d, normal, coeff ) {
+	//TODO OR NOT TODO
+	return ray
+}
+
+function shade( p, d, inter ) {
+	let res = vec4( 0.0, 0.0, 0.0, 1.0 )
+	//biggest to do
+	//in light sources
+	//if shadow_feeler( material.pos, ray, source)
+	//	add_light(source)
+	if( inter.material.reflect > 0 )
+		res = add( res, reflect( p, d, inter.normal ) )
+	if ( inter.material.color[3] < 0.99 )
+		res = add( res, refract( ray, inter.normal, inter.refract) )
+	return inter.material.color
+}
+
+//ray is always represented by p, d
 function trace(p, d) {
-	let object = closest_ray_surface_intersection(p, d)
-	if ( object )
-		return object.clr
+	let intersection = closest_ray_surface_intersection(p, d)
+	if ( intersection )
+		return shade(p, d, intersection)
 	return outer_space_color
 }
 

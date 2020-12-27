@@ -28,13 +28,14 @@ var gl;
 var program;
 
 var texture;
+var lights = []
 var objects = []
 
 //these are examples for the objects that are created by the generator
 var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
 var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
 var intersection = { distance: 0, pos: vec3(0.0,0.0,0.0), normal: vec3(0.0,0.0,0.0), material: {clr: green, reflect: 0, refract:0 }, count:0 } //TODO
-var light = { pos: vec3(-20, 0, 20), intensity: 0 } //TODO
+var light = { pos: vec3(-20, 0, 20), intensity: 1.0 } //TODO
 
 
 
@@ -122,7 +123,7 @@ function object_intersection(p, d, obj ) {
 		let t2 = ( -B + Math.sqrt( B*B - 4*A*C ) ) / 2
 		let t = Math.min( t1, t2 )
 		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t) )
-		return { distance: t, pos: pos, normal: pos - sph.center, material: sph.material, count:0 } //TODO 
+		return { distance: t, pos: pos, normal: normalize( subtract( pos, sph.center ) ), material: sph.material, count:0 } //TODO 
 	}
 	if( obj.type == SPHERE ) 
 		return sphere_intersection(p, d, obj)
@@ -162,16 +163,30 @@ function refract( p, d, normal, coeff ) {
 }
 
 function shade( p, d, inter ) {
-	let res = vec4( 0.0, 0.0, 0.0, 1.0 )
-	//biggest to do
-	//in light sources
+	let clr = inter.material.color
+	//TODO more light sources
+	//TODO reject light if it's not in the from of the sphere
 	//if shadow_feeler( material.pos, ray, source)
-	//	add_light(source)
+		// I = I * k * (N . L)
+		// I light intensity
+		// k diffuse reflection coeff of s
+		// L light vector normalized
+		// N normal vector
+		//	add_light(source)
+	let lvec = subtract( light.pos, inter.pos )
+	let L = normalize( lvec )
+	let ldist = lvec[0] / L[0]
+	let N = inter.normal
+	let k = 0.5
+	let ks = 0.7
+	let fatt = Math.min( 1 / ( 0.1 + 0.2 * ldist + 0.9 * Math.pow( ldist, 2 ) ), 1 ) //
+	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
 	if( inter.material.reflect > 0 )
 		res = add( res, reflect( p, d, inter.normal ) )
 	if ( inter.material.color[3] < 0.99 )
 		res = add( res, refract( ray, inter.normal, inter.refract) )
-	return inter.material.color
+	return vec4( clr[0] * I, clr[1] * I, clr[2] * I, clr[3] )
+	
 }
 
 //ray is always represented by p, d

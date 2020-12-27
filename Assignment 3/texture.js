@@ -2,7 +2,7 @@
 
 "use strict";
 
-var imageSize = 128;
+var imageSize = 512;
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped.
@@ -12,6 +12,14 @@ var image = new Uint8ClampedArray(imageSize * imageSize * 3);
 let outer_space_color = vec4(0.0,0.0,0.0,1.0)
 let default_object_color = vec4(0.8,0.6,1.0,1.0)
 
+const red = vec4(1.0,0.0,0.0,1.0)
+const green = vec4(0.0,1.0,0.0,1.0)
+const blue = vec4(0.0,0.0,1.0,1.0)
+
+const SPHERE = 0
+const TRIANGLE = 1
+
+
 // Texture coords for quad
 var canvas;
 var gl;
@@ -19,8 +27,10 @@ var gl;
 var program;
 
 var texture;
+var objects = []
 
-var sphere = { c: vec3( 0.0, 0.0, 20), r: 10.0 }
+var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, clr: red}
+var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), clr: green }
 
 
 
@@ -37,24 +47,77 @@ Shade(point, ray)	// return radiance of light leaving
 }
 */
 
-
-
-function triangle_intersection() {
-	/* combination of ray plane intersection 
-	and point in polygon test (3-D or 2-D) */
-	
-	return false
+function generate_objects() {
+	for( let i = 0; i < 10; i++ ) {
+		objects.push( { type: SPHERE, center: vec3( Math.random() * 10 - 5, Math.random() * 10 - 5, 20 + Math.random() * 10), radius: 5, 
+			clr: vec4( Math.random(), Math.random(), Math.random(), 1 ) } )
+	}
 }
 
-function sphere_intersection(p, d, sph) {
+function point_in_triangle_test( p, tri ) {
+/* algorithm taken from https://blackpawn.com/texts/pointinpoly/ */
+	
+	// Compute vectors        
+	let v0 = subtract( tri.c, tri.a )
+	let v1 = subtract( tri.b, tri.a )
+	let v2 = subtract( p, tri.a )
+
+	// Compute dot products
+	let dot00 = dot(v0, v0)
+	let dot01 = dot(v0, v1)
+	let dot02 = dot(v0, v2)
+	let dot11 = dot(v1, v1)
+	let dot12 = dot(v1, v2)
+
+	// Compute barycentric coordinates
+	let invDenom = 1 / (dot00 * dot11 - dot01 * dot01)
+	let u = (dot11 * dot02 - dot01 * dot12) * invDenom
+	let v = (dot00 * dot12 - dot01 * dot02) * invDenom
+
+	// Check if point is in triangle
+	return (u >= 0) && (v >= 0) && (u + v < 1)
+
+}
+
+function object_intersection(p, d, obj ) {
+	function triangle_intersection(p,d, tri) {
+		/* combination of ray plane intersection 
+		and point in polygon test (3-D or 2-D) */
+		/* plane = (x-q) . n*/
+		/*n = crossproduct of 2 edges */
+		let edge1 = subtract( tri.b, tri.a )
+		let edge2 = subtract( tri.c, tri.a )
+		let n = cross( edge1, edge2 )
+		if ( dot( d, n ) == 0 )
+			return Number.INFINITY 
+		//sign of t might be changed (there was a minus here)
+		let t = ( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
+		/* t = -(p.n + q.n) / d.n */
+		console.log( t )
+		let intersection = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
+		if ( ! point_in_triangle_test( intersection, triangle ) || t < 0 )
+			return Number.INFINITY
+		else
+			return t
+	}
+	function sphere_intersection(p, d, sph) {
 	//http://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/
-	let A = dot(d,d)
-	let B = 2 * dot( d, subtract(p, sph.c) )
-	let C = dot( subtract(p,sph.c), subtract(p,sph.c) ) - sph.r * sph.r
-	let delta = B*B - 4 * A * C
-	console.log( sphere )
-	console.log("A: ", A.toPrecision(2), "B: ", B.toPrecision(2), "C: ", C.toPrecision(2),"delta: ", delta.toPrecision(2))
-	return delta >= 0
+		let A = dot(d,d)
+		let B = 2 * dot( d, subtract(p, sph.center) )
+		let C = dot( subtract(p,sph.center), subtract(p,sph.center) ) - sph.radius * sph.radius
+		let delta = B*B - 4 * A * C
+		//console.log( sphere )
+		//console.log("A: ", A.toPrecision(2), "B: ", B.toPrecision(2), "C: ", C.toPrecision(2),"delta: ", delta.toPrecision(2))
+		if ( delta < 0 ) 
+			return Number.INFINITY 
+		let t1 = ( -B + Math.sqrt( B*B + 4*A*C ) ) / 2
+		let t2 = ( -B + Math.sqrt( B*B - 4*A*C ) ) / 2
+		return Math.min( t1, t2 )
+	}
+	if( obj.type == SPHERE ) 
+		return sphere_intersection(p, d, obj)
+	else
+		return triangle_intersection(p, d, obj)
 }
 
 function closest_ray_surface_intersection(p, d) {
@@ -64,13 +127,17 @@ function closest_ray_surface_intersection(p, d) {
 		return the closest point of intersection to viewer 
 		(also return other info about that point, e.g., surface normal, material properties, etc.)
 	*/
-	return sphere_intersection(p, d, sphere)
+	objects.sort( (a,b) => { return object_intersection( p, d, a ) > object_intersection( p, d, b ) } )
+	if ( object_intersection( p, d, objects[0] ) )
+		return objects[0]
+	else
+		return null
 }
 
 function trace(p, d) {
-	let object_point = closest_ray_surface_intersection(p, d)
-	if ( object_point )
-		return default_object_color
+	let object = closest_ray_surface_intersection(p, d)
+	if ( object )
+		return object.clr
 	return outer_space_color
 }
 
@@ -152,7 +219,8 @@ window.onload = function init()
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
-
+	
+	generate_objects()
     render();
 }
 

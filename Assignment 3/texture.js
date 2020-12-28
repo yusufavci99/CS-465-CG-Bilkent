@@ -2,7 +2,10 @@
 
 "use strict";
 
-var imageSize = 256;
+var imageSize = 512;
+let pixCount = imageSize*imageSize
+let renderMap = []
+
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped.
@@ -19,6 +22,8 @@ const blue = vec4(0.0,0.0,1.0,1.0)
 const SPHERE = 0
 const TRIANGLE = 1
 const INF = 9999999
+
+var drawIndex = 0
 
 
 // Texture coords for quad
@@ -62,6 +67,23 @@ function generate_objects() {
 			} 
 		} )
 	}
+	/*for( let i = 0; i < 5; i++ ) {
+		objects.push( { type: SPHERE, center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), radius: Math.random() * 10, 
+			material: { 
+				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+				reflect: 0,
+				refract: 0
+			} 
+		} )
+	}*/
+}
+
+function update_objects() {
+	objects.forEach( (o, i) => {
+		if( o.type == SPHERE ) {
+			o.center = add( o.center, vec3( 0.01, 0.01, 0.01 ) );
+		}
+	});
 }
 
 function point_in_triangle_test( p, tri ) {
@@ -99,15 +121,15 @@ function object_intersection(p, d, obj ) {
 		let edge2 = subtract( tri.c, tri.a )
 		let n = cross( edge1, edge2 )
 		if ( dot( d, n ) == 0 )
-			return INF
+			return null
 		//sign of t might be changed (there was a minus here)
 		let t = ( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
 		/* t = -(p.n + q.n) / d.n */
 		let intersection = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
 		if ( ! point_in_triangle_test( intersection, triangle ) || t < 0 )
-			return INF
+			return null
 		else
-			return t
+			return { distance: t, pos: pos, normal: normalize( n ), material: tri.material, count:0 } 
 	}
 	function sphere_intersection(p, d, sph) {
 	//http://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/
@@ -200,10 +222,13 @@ function trace(p, d) {
 // Ray tracing function
 function raytrace()
 {
-    for (var y = 0; y < imageSize; ++y)
-    {
-        for (var x = 0; x < imageSize; ++x)
-        {
+	let startTime = new Date()
+	let frameDuration = 1000 / 60
+	var loop = true;
+	setTimeout(function(){ loop = false; }, 1000);
+	while( (new Date) - startTime < 1000 / 60) {
+		let x = renderMap[drawIndex] % imageSize;
+		let y = Math.floor( renderMap[drawIndex] / imageSize );
 			let px = ( x / imageSize - 0.5 ) * 2
 			let py = ( y / imageSize - 0.5 ) * 2
 			let p = vec3( px, py, 1.0 )
@@ -217,8 +242,11 @@ function raytrace()
             image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
             image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
             image[(y * imageSize + x) * 3 + 2] = 255 * color[2];
-        }
-    }
+		//drawIndex = Math.floor ( Math.random() * pixCount );
+		drawIndex = ( drawIndex + 1 ) % pixCount;
+	}
+	update_objects()
+	requestAnimationFrame(render);
 }
 
 window.onload = function init()
@@ -277,6 +305,15 @@ window.onload = function init()
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 	
 	generate_objects()
+	for (var i = 0; i < pixCount; i++) {
+		renderMap.push(i);
+	}
+	for(let i = pixCount - 1; i > 0; i-- ) {
+		let j = Math.floor(Math.random() * i )
+		let tmp = renderMap[i]
+		renderMap[i] = renderMap[j]
+		renderMap[j] = tmp
+	}
     render();
 }
 

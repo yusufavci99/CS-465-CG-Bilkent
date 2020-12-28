@@ -2,7 +2,7 @@
 
 "use strict";
 
-var imageSize = 512;
+var imageSize = 256;
 let pixCount = imageSize*imageSize
 let renderMap = []
 
@@ -38,7 +38,7 @@ var objects = []
 
 //these are examples for the objects that are created by the generator
 var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
-var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
+//var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
 var intersection = { distance: 0, pos: vec3(0.0,0.0,0.0), normal: vec3(0.0,0.0,0.0), material: {clr: green, reflect: 0, refract:0 }, count:0 } //TODO
 var light = { pos: vec3(-20, 0, 20), intensity: 1.0 } //TODO
 
@@ -67,15 +67,18 @@ function generate_objects() {
 			} 
 		} )
 	}
-	/*for( let i = 0; i < 5; i++ ) {
-		objects.push( { type: SPHERE, center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), radius: Math.random() * 10, 
+	for( let i = 0; i < 5; i++ ) {
+		objects.push( { type: TRIANGLE, 
+			a: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+			b: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+			c: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
 			material: { 
 				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
 				reflect: 0,
 				refract: 0
 			} 
 		} )
-	}*/
+	}
 }
 
 function update_objects() {
@@ -88,7 +91,7 @@ function update_objects() {
 
 function point_in_triangle_test( p, tri ) {
 /* algorithm taken from https://blackpawn.com/texts/pointinpoly/ */
-	
+	//console.log(tri)
 	// Compute vectors        
 	let v0 = subtract( tri.c, tri.a )
 	let v1 = subtract( tri.b, tri.a )
@@ -125,8 +128,8 @@ function object_intersection(p, d, obj ) {
 		//sign of t might be changed (there was a minus here)
 		let t = ( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
 		/* t = -(p.n + q.n) / d.n */
-		let intersection = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
-		if ( ! point_in_triangle_test( intersection, triangle ) || t < 0 )
+		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
+		if ( ! point_in_triangle_test( pos, tri ) || t < 0 )
 			return null
 		else
 			return { distance: t, pos: pos, normal: normalize( n ), material: tri.material, count:0 } 
@@ -165,6 +168,8 @@ function closest_ray_surface_intersection(p, d) {
 	let selected_inter = null
 	objects.forEach( (o,i) => {
 		let intersection = object_intersection( p, d, o )
+		if( intersection == null )
+			return;
 		let dist = intersection.distance
 		if ( dist < closest_dist ) {
 			closest_dist = dist

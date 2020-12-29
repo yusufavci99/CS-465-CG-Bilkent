@@ -8,11 +8,11 @@ let renderMap = []
 
 
 // Create image data
-// Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped.
+// Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped. Clamped: 0-255
 // * 3 is for dimension
 var image = new Uint8ClampedArray(imageSize * imageSize * 3);
 
-let outer_space_color = vec4(0.0,0.0,0.0,1.0)
+let outer_space_color = vec4(0.1,0.2,0.3,1.0)
 let default_object_color = vec4(0.8,0.6,1.0,1.0)
 
 const red = vec4(1.0,0.0,0.0,1.0)
@@ -21,10 +21,10 @@ const blue = vec4(0.0,0.0,1.0,1.0)
 
 const SPHERE = 0
 const TRIANGLE = 1
+const CUBE = 2
 const INF = 9999999
 
 var drawIndex = 0
-
 
 // Texture coords for quad
 var canvas;
@@ -32,18 +32,26 @@ var gl;
 
 var program;
 
+// Texture to draw on
 var texture;
 var lights = []
 var objects = []
 
-//these are examples for the objects that are created by the generator
-var sphere = { type: SPHERE, center: vec3( 0.0, 0.0, 20), radius: 5.0, material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
+// These are examples for the objects that are created by the generator
+var sphere = { 
+	type: SPHERE, center: vec3( 0.0, 0.0, 20), 
+	radius: 5.0, 
+	material: {clr: green, reflect: 0, refract:0 } 
+} //TODO NORMAL FINDING
+
 //var triangle = { type: TRIANGLE, a: vec3( 0.0, 0.0, 20.0), b: vec3( 10.0, 0.0, 20.0 ), material: {clr: green, reflect: 0, refract:0 } } //TODO NORMAL FINDING
-var intersection = { distance: 0, pos: vec3(0.0,0.0,0.0), normal: vec3(0.0,0.0,0.0), material: {clr: green, reflect: 0, refract:0 }, count:0 } //TODO
+var intersection = {
+	distance: 0, 
+	pos: vec3(0.0,0.0,0.0),
+	normal: vec3(0.0,0.0,0.0), 
+	material: {clr: green, reflect: 0, refract:0 }, count:0 
+} //TODO
 var light = { pos: vec3(-20, 0, 20), intensity: 1.0 } //TODO
-
-
-
 
 /*
 Shade(point, ray)	// return radiance of light leaving
@@ -57,34 +65,208 @@ Shade(point, ray)	// return radiance of light leaving
 }
 */
 
-function generate_objects() {
-	for( let i = 0; i < 5; i++ ) {
-		objects.push( { type: SPHERE, center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), radius: Math.random() * 10, 
-			material: { 
-				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-				reflect: 0,
-				refract: 0
-			} 
-		} )
+function generate_objects( generateCounts) {
+
+	//Create Spheres
+	// for( let i = 0; i < generateCounts.sphere; i++ ) {
+	// 	objects.push( {
+	// 		type: SPHERE, 
+	// 		center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+	// 		radius: Math.random() * 10, 
+	// 		material: { 
+	// 			color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+	// 			reflect: 0,
+	// 			refract: 0
+	// 		},
+	// 		velocity: vec3(0,0,0), 
+	// 	} )
+	// }
+
+	// //Create Triangles
+	// for( let i = 0; i < generateCounts.triangle; i++ ) {
+	// 	objects.push(  
+	// 		createTriangle(
+	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
+	// 			vec4( Math.random(), Math.random(), Math.random(), 1 ))
+	// 		)
+	// }
+
+	objects.push(
+		createCube(
+			vec3(0,0,20),
+			vec3(20,0,20),
+			vec3(0,20,20),
+			vec4( Math.random(), Math.random(), Math.random(), 1 )
+		)
+	)
+}
+
+function createCube(a, b, c, color) {
+	let cube = {
+		type: CUBE,
+		triangles: [],
 	}
-	for( let i = 0; i < 5; i++ ) {
-		objects.push( { type: TRIANGLE, 
-			a: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-			b: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-			c: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-			material: { 
-				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-				reflect: 0,
-				refract: 0
-			} 
-		} )
+
+	// Front1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,1,1),
+			vec3(-1,-1,1),
+			vec3(1,1,1),
+			color
+		)
+	);
+	// Front2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,1,1),
+			vec3(-1,-1,1),
+			vec3(1,-1,1),
+			color
+		)
+	);
+	// Left 1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,1,1),
+			vec3(-1,1,-1),
+			vec3(-1,-1,1),
+			color
+		)
+	);
+	// Left 2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,1,-1),
+			vec3(-1,-1,-1),
+			vec3(-1,-1,1),
+			color
+		)
+	);
+	// Right 1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,1,1),
+			vec3(1,-1,1),
+			vec3(1,1,-1),
+			color
+		)
+	);
+	// Right 2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,1,-1),
+			vec3(1,-1,1),
+			vec3(1,-1,-1),
+			color
+		)
+	);
+	// Back 1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,1,-1),
+			vec3(1,1,-1),
+			vec3(-1,-1,-1),
+			color
+		)
+	);
+	// Back 2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,1,-1),
+			vec3(1,-1,-1),
+			vec3(-1,-1,-1),
+			color
+		)
+	);
+	// Up 1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,1,-1),
+			vec3(-1,1,1),
+			vec3(1,1,-1),
+			color
+		)
+	);
+	// Up 2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,1,-1),
+			vec3(-1,1,1),
+			vec3(1,1,1),
+			color
+		)
+	);
+	// Down 1
+	cube.triangles.push( 
+		createTriangle(
+			vec3(-1,-1,-1),
+			vec3(1,-1,-1),
+			vec3(-1,-1,1),
+			color
+		)
+	);
+	// Down 2
+	cube.triangles.push( 
+		createTriangle(
+			vec3(1,-1,-1),
+			vec3(1,-1,1),
+			vec3(-1,-1,1),
+			color
+		)
+	);
+
+	// let rtt = rotate(0, 1,0,0);
+	let rtt = rotate(Math.random() * 360 - 180, normalize(vec3(Math.random(), Math.random(), Math.random())));
+	let trt = translate( 0, 0, 50 );
+	// let trt = translate( 0, 0, 50 );
+	let scl = scalem(10,10,10);
+	cube.triangles.forEach(trig => {
+		console.log(trig.a)
+		console.log(trig.b)
+		console.log(trig.c)
+
+		let ta =  vec4(trig.a);
+		let tb =  vec4(trig.b);
+		let tc =  vec4(trig.c);
+		
+		let tmpa = mult(trt, mult(rtt, mult(scl,ta)));
+		let tmpb = mult(trt, mult(rtt, mult(scl,tb)));
+		let tmpc = mult(trt, mult(rtt, mult(scl,tc)));
+
+		trig.a = vec3(tmpa);
+		console.log(trig.a)
+		trig.b = vec3(tmpb);
+		console.log(trig.b)
+		trig.c = vec3(tmpc);
+		console.log(trig.c)
+	});
+
+	return cube;
+}
+
+function createTriangle(a, b, c, color) {
+	return {
+		type: TRIANGLE, 
+		a: a,
+		b: b,
+		c: c,
+		material: { 
+			color: color,
+			reflect: 0,
+			refract: 0
+		} 
 	}
 }
 
 function update_objects() {
 	objects.forEach( (o, i) => {
 		if( o.type == SPHERE ) {
-			o.center = add( o.center, vec3( 0.01, 0.01, 0.01 ) );
+			o.velocity = add(o.velocity, vec3( Math.random() * 0.002 - 0.001, Math.random() * 0.002 - 0.001, Math.random() * 0.002 - 0.001));
+			// o.center = add( o.center, vec3( 0.01, 0.01, 0.01 ) );
+			o.center = add( o.center, o.velocity);
 		}
 	});
 }
@@ -151,9 +333,9 @@ function object_intersection(p, d, obj ) {
 		return { distance: t, pos: pos, normal: normalize( subtract( pos, sph.center ) ), material: sph.material, count:0 } //TODO 
 	}
 	if( obj.type == SPHERE ) 
-		return sphere_intersection(p, d, obj)
+		return sphere_intersection(p, d, obj);
 	else if ( obj.type == TRIANGLE )
-		return triangle_intersection(p, d, obj)
+		return triangle_intersection(p, d, obj);
 }
 
 function closest_ray_surface_intersection(p, d) {
@@ -167,16 +349,34 @@ function closest_ray_surface_intersection(p, d) {
 	let closest_dist = INF
 	let selected_inter = null
 	objects.forEach( (o,i) => {
-		let intersection = object_intersection( p, d, o )
-		if( intersection == null )
-			return;
-		let dist = intersection.distance
-		if ( dist < closest_dist ) {
-			closest_dist = dist
-			selected_inter = intersection
+		let intersection;
+		if( o.type == CUBE) {
+			o.triangles.forEach( trig => {
+				intersection = object_intersection( p, d, trig );
+				let result = returnClosest(intersection, closest_dist, selected_inter);
+				closest_dist = result[0];
+				selected_inter = result[1];
+			})
+		} else {
+			intersection = object_intersection( p, d, o );
+			let result = returnClosest(intersection, closest_dist, selected_inter);
+			closest_dist = result[0];
+			selected_inter = result[1];
 		}
-	} )
+		
+	})
 	return selected_inter
+}
+
+function returnClosest( intersection, closest_dist, selected_inter) {
+	if( intersection == null )
+		return [closest_dist, selected_inter];
+	let dist = intersection.distance;
+	if ( dist < closest_dist ) {
+		closest_dist = dist;
+		selected_inter = intersection;
+	}
+	return [closest_dist, selected_inter];
 }
 
 function reflect( p, d, normal ) {
@@ -185,9 +385,19 @@ function reflect( p, d, normal ) {
 }
 
 function refract( p, d, normal, coeff ) {
-	//TODO OR NOT TODO
+	//TODO OR NOT TODO THAT IS THE QUESTION INDEED
 	return ray
 }
+
+// For the third programming assignment, one of the primitives you will render is cone.
+// Just like the sphere that we discussed in the lectures, it is easiest to do ray-surface
+// intersections for the cone is by using the implicit equation for the cone. Just plug 
+// the components of the parametric ray equation (x, y, and z) into the implicit equation
+// for the cone and solve for t. Then  plug t (the t value > 0) into the parametric ray
+// equation to find the intersection point of the ray with the cone. The implicit equation 
+// for the cone is given in the following page. The cone equation generates and infinite cone.
+// You must restrict it to a finite cone by extending the implicit equation as described in the following page.
+// https://math.stackexchange.com/questions/207753/parametric-and-implicit-representation-of-a-cone
 
 function shade( p, d, inter ) {
 	let clr = inter.material.color
@@ -231,22 +441,23 @@ function raytrace()
 	let frameDuration = 1000 / 60
 	var loop = true;
 	setTimeout(function(){ loop = false; }, 1000);
+	// Limit via time
 	while( (new Date) - startTime < 1000 / 60) {
 		let x = renderMap[drawIndex] % imageSize;
 		let y = Math.floor( renderMap[drawIndex] / imageSize );
-			let px = ( x / imageSize - 0.5 ) * 2
-			let py = ( y / imageSize - 0.5 ) * 2
-			let p = vec3( px, py, 1.0 )
-			let d = normalize( vec3( px, py, 1.0 ), false )
-            // Get a random color
-            var color = trace(p,d);
+		let px = ( x / imageSize - 0.5 ) * 2
+		let py = ( y / imageSize - 0.5 ) * 2
+		let p = vec3( px, py, 1.0 )
+		let d = normalize( vec3( px, py, 1.0 ), false )
+		// Get a random color
+		var color = trace(p,d);
 
-            // Trace Here
+		// Trace Here
 
-            // Set color values
-            image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
-            image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
-            image[(y * imageSize + x) * 3 + 2] = 255 * color[2];
+		// Set color values
+		image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
+		image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
+        image[(y * imageSize + x) * 3 + 2] = 255 * color[2];
 		//drawIndex = Math.floor ( Math.random() * pixCount );
 		drawIndex = ( drawIndex + 1 ) % pixCount;
 	}
@@ -309,12 +520,23 @@ window.onload = function init()
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 	
-	generate_objects()
+	// How many of each object should be generated
+	let generateCounts = {
+		sphere: 5,
+		triangle: 5,
+	}
+
+	// Creates the objects
+	generate_objects( generateCounts)
+
+	// Fill the render map ? WHY THO
 	for (var i = 0; i < pixCount; i++) {
 		renderMap.push(i);
 	}
+
+	// WHY for blurring or
 	for(let i = pixCount - 1; i > 0; i-- ) {
-		let j = Math.floor(Math.random() * i )
+		let j = Math.floor(Math.random() * i);
 		let tmp = renderMap[i]
 		renderMap[i] = renderMap[j]
 		renderMap[j] = tmp

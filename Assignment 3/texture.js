@@ -22,6 +22,7 @@ const blue = vec4(0.0,0.0,1.0,1.0)
 const SPHERE = 0
 const TRIANGLE = 1
 const CUBE = 2
+const CONE = 3
 const INF = 9999999
 
 var drawIndex = 0
@@ -93,14 +94,29 @@ function generate_objects( generateCounts) {
 	// 		)
 	// }
 
-	// objects.push(
-		// createCube(
-			// vec3(0,0,20),
-			// vec3(20,0,20),
-			// vec3(0,20,20),
-			// vec4( Math.random(), Math.random(), Math.random(), 1 )
-		// )
-	// )
+	objects.push(
+		createCube(
+			vec3(0,0,20),
+			vec3(20,0,20),
+			vec3(0,20,20),
+			vec4( Math.random(), Math.random(), Math.random(), 1 )
+		)
+	)
+	
+	objects.push(
+		{
+			type: CONE,
+			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+			radius: 10,//Math.random() * 10, 
+			height: 7,
+			material: { 
+				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+				reflect: 0.9,
+				refract: 0
+			}, 
+
+		}
+	)
 }
 
 function createCube(a, b, c, color) {
@@ -109,7 +125,7 @@ function createCube(a, b, c, color) {
 		triangles: [],
 	}
 	
-	var sc = 10
+	var sc = 100
 	
 	var points = [
 		vec3(-sc,-sc,-sc), //0
@@ -124,9 +140,8 @@ function createCube(a, b, c, color) {
 	
 	// let rtt = rotate(0, 1,0,0);
 	let rtt = rotate(Math.random() * 360 - 180, normalize(vec3(Math.random(), Math.random(), Math.random())));
-	let trt = translate( 0, 0, 50 );
+	let trt = translate( 0, 0, 500 );
 	// let trt = translate( 0, 0, 50 );
-	let scl = scalem(10,10,10);
 	for (let i = 0; i < 8; i++ ) {
 		//console.log(points[i])
 
@@ -163,7 +178,7 @@ function createTriangle(a, b, c, color) {
 		c: c,
 		material: { 
 			color: color,
-			reflect: 0,
+			reflect: 0.7,
 			refract: 0
 		} 
 	}
@@ -205,6 +220,54 @@ function point_in_triangle_test( p, tri ) {
 }
 
 function object_intersection(p, d, obj ) {
+	function cone_intersection(p, d, cone) {
+		//algorithm is adapted from
+		//https://github.com/iceman201/RayTracing/blob/master/Ray%20tracing/Cone.cpp
+		let px = p[0];
+		let py = p[1];
+		let pz = p[2];
+		let dx = d[0];
+		let dy = d[1];
+		let dz = d[2];
+		let centerx = cone.center[0];
+		let centery = cone.center[1];
+		let centerz = cone.center[2];
+		
+		let A = px - centerx;
+		let B = pz - centerz;
+		let D = cone.height - py + centery;
+		
+		let tan = (cone.radius / cone.height)*(cone.radius / cone.height);
+		
+		let a = (dx * dx) + (dz * dz) - (tan * (dy * dy));
+		let b = (2 * A * dx) + (2 * B * dz) + (2 * tan * D * dy);
+		let c = (A * A) + (B * B) - (tan * (D * D));
+
+		let delta = b*b - 4*(a*c);
+		if(Math.abs(delta) < 0.001 || delta < 0.0) {
+			return INF; 
+		}
+		
+		let t1 = (-b - Math.sqrt(delta))/(2*a);
+		let t2 = (-b + Math.sqrt(delta))/(2*a);
+		let t;
+		
+		if (t1>t2) t = t2;
+		else t = t1;
+		
+		let r = py + t*dy;
+
+		let r2 = Math.sqrt((px-centerx)*(px-centerx) + (pz-centerz)*(pz-centerz) );
+		let n = vec3(px-centerx, r2*(cone.radius/cone.height), pz-centerz);
+
+		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t) );
+
+		if ((r > centery) && (r < centery + cone.height)) {
+			return { distance: t, pos: pos, normal: normalize(n), material: cone.material, count:0 }
+		} else {
+			return INF
+		}
+	}
 	function triangle_intersection(p,d, tri) {
 		/* combination of ray plane intersection 
 		and point in polygon test (3-D or 2-D) */
@@ -246,6 +309,8 @@ function object_intersection(p, d, obj ) {
 		return sphere_intersection(p, d, obj);
 	else if ( obj.type == TRIANGLE )
 		return triangle_intersection(p, d, obj);
+	else if (obj.type == CONE )
+		return cone_intersection(p, d, obj);
 }
 
 function closest_ray_surface_intersection(p, d) {

@@ -68,19 +68,19 @@ Shade(point, ray)	// return radiance of light leaving
 function generate_objects( generateCounts) {
 
 	//Create Spheres
-	// for( let i = 0; i < generateCounts.sphere; i++ ) {
-	// 	objects.push( {
-	// 		type: SPHERE, 
-	// 		center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-	// 		radius: Math.random() * 10, 
-	// 		material: { 
-	// 			color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-	// 			reflect: 0,
-	// 			refract: 0
-	// 		},
-	// 		velocity: vec3(0,0,0), 
-	// 	} )
-	// }
+	for( let i = 0; i < generateCounts.sphere; i++ ) {
+		objects.push( {
+			type: SPHERE, 
+			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+			radius: Math.random() * 10, 
+			material: { 
+				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+				reflect: 0.5,
+				refract: 0
+			},
+			velocity: vec3(0,0,0), 
+		} )
+	}
 
 	// //Create Triangles
 	// for( let i = 0; i < generateCounts.triangle; i++ ) {
@@ -93,14 +93,14 @@ function generate_objects( generateCounts) {
 	// 		)
 	// }
 
-	objects.push(
-		createCube(
-			vec3(0,0,20),
-			vec3(20,0,20),
-			vec3(0,20,20),
-			vec4( Math.random(), Math.random(), Math.random(), 1 )
-		)
-	)
+	// objects.push(
+		// createCube(
+			// vec3(0,0,20),
+			// vec3(20,0,20),
+			// vec3(0,20,20),
+			// vec4( Math.random(), Math.random(), Math.random(), 1 )
+		// )
+	// )
 }
 
 function createCube(a, b, c, color) {
@@ -108,141 +108,49 @@ function createCube(a, b, c, color) {
 		type: CUBE,
 		triangles: [],
 	}
-
-	// Front1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,1,1),
-			vec3(-1,-1,1),
-			vec3(1,1,1),
-			color
-		)
-	);
-	// Front2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,1,1),
-			vec3(-1,-1,1),
-			vec3(1,-1,1),
-			color
-		)
-	);
-	// Left 1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,1,1),
-			vec3(-1,1,-1),
-			vec3(-1,-1,1),
-			color
-		)
-	);
-	// Left 2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,1,-1),
-			vec3(-1,-1,-1),
-			vec3(-1,-1,1),
-			color
-		)
-	);
-	// Right 1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,1,1),
-			vec3(1,-1,1),
-			vec3(1,1,-1),
-			color
-		)
-	);
-	// Right 2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,1,-1),
-			vec3(1,-1,1),
-			vec3(1,-1,-1),
-			color
-		)
-	);
-	// Back 1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,1,-1),
-			vec3(1,1,-1),
-			vec3(-1,-1,-1),
-			color
-		)
-	);
-	// Back 2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,1,-1),
-			vec3(1,-1,-1),
-			vec3(-1,-1,-1),
-			color
-		)
-	);
-	// Up 1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,1,-1),
-			vec3(-1,1,1),
-			vec3(1,1,-1),
-			color
-		)
-	);
-	// Up 2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,1,-1),
-			vec3(-1,1,1),
-			vec3(1,1,1),
-			color
-		)
-	);
-	// Down 1
-	cube.triangles.push( 
-		createTriangle(
-			vec3(-1,-1,-1),
-			vec3(1,-1,-1),
-			vec3(-1,-1,1),
-			color
-		)
-	);
-	// Down 2
-	cube.triangles.push( 
-		createTriangle(
-			vec3(1,-1,-1),
-			vec3(1,-1,1),
-			vec3(-1,-1,1),
-			color
-		)
-	);
-
+	
+	var sc = 10
+	
+	var points = [
+		vec3(-sc,-sc,-sc), //0
+		vec3(sc,-sc,-sc), //1
+		vec3(-sc,sc,-sc), //2
+		vec3(sc,sc,-sc), // 3
+		vec3(-sc,-sc,sc), //4
+		vec3(sc,-sc,sc), //5
+		vec3(-sc,sc,sc), //6
+		vec3(sc,sc,sc) //7
+	]
+	
 	// let rtt = rotate(0, 1,0,0);
 	let rtt = rotate(Math.random() * 360 - 180, normalize(vec3(Math.random(), Math.random(), Math.random())));
 	let trt = translate( 0, 0, 50 );
 	// let trt = translate( 0, 0, 50 );
 	let scl = scalem(10,10,10);
-	cube.triangles.forEach(trig => {
-		console.log(trig.a)
-		console.log(trig.b)
-		console.log(trig.c)
+	for (let i = 0; i < 8; i++ ) {
+		//console.log(points[i])
 
-		let ta =  vec4(trig.a);
-		let tb =  vec4(trig.b);
-		let tc =  vec4(trig.c);
+		let ta =  vec4(points[i]);
 		
-		let tmpa = mult(trt, mult(rtt, mult(scl,ta)));
-		let tmpb = mult(trt, mult(rtt, mult(scl,tb)));
-		let tmpc = mult(trt, mult(rtt, mult(scl,tc)));
-
-		trig.a = vec3(tmpa);
-		console.log(trig.a)
-		trig.b = vec3(tmpb);
-		console.log(trig.b)
-		trig.c = vec3(tmpc);
-		console.log(trig.c)
-	});
+		let tmpa = mult(trt, mult(rtt, ta) );
+		
+		points[i] = vec3(tmpa)
+		//console.log(points[i])
+	}
+	
+	let ord = [ 6,4,7, 7,4,5, 6,2,4, 2,0,4, 7,5,3, 3,5,1, 2,3,0, 3,1,0, 2,6,3, 3,6,7, 0,1,4, 1,5,4 ];
+	
+	for( let i = 0; i < 36; i += 3 ) {
+		//console.log(i, ord[i])
+		cube.triangles.push(
+			createTriangle(
+				points[ord[i]],
+				points[ord[i+1]],
+				points[ord[i+2]],
+				color
+			)
+		);
+	}
 
 	return cube;
 }
@@ -326,11 +234,13 @@ function object_intersection(p, d, obj ) {
 		//console.log("A: ", A.toPrecision(2), "B: ", B.toPrecision(2), "C: ", C.toPrecision(2),"delta: ", delta.toPrecision(2))
 		if ( delta < 0 ) 
 			return INF 
-		let t1 = ( -B + Math.sqrt( B*B + 4*A*C ) ) / 2
-		let t2 = ( -B + Math.sqrt( B*B - 4*A*C ) ) / 2
+		let t1 = ( -B + Math.sqrt( delta ) ) / 2
+		let t2 = ( -B - Math.sqrt( delta ) ) / 2
 		let t = Math.min( t1, t2 )
-		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t) )
-		return { distance: t, pos: pos, normal: normalize( subtract( pos, sph.center ) ), material: sph.material, count:0 } //TODO 
+		let pos = add( p, scale( t, d ) )
+		let normal = subtract( pos, sph.center )
+		//console.log( 'sphere normal ', normal, 'pos ', pos, 'sph.center ', sph.center, 'p', p, 'd', d, 't', t, 't1', t1, 't2', t2 )
+		return { distance: t, pos: pos, normal: normalize( normal ), material: sph.material, count:0 } //TODO 
 	}
 	if( obj.type == SPHERE ) 
 		return sphere_intersection(p, d, obj);
@@ -346,6 +256,15 @@ function closest_ray_surface_intersection(p, d) {
 		(also return other info about that point, e.g., surface normal, material properties, etc.)
 	*/
 	//let sorted = objects.sort( (a,b) => { return object_intersection( p, d, a ) > object_intersection( p, d, b ) } )
+	function chooseClosest( intersection ) {
+		if( intersection == null )
+			return
+		let dist = intersection.distance;
+		if ( dist > 1.0 && dist < closest_dist ) {
+			closest_dist = dist;
+			selected_inter = intersection;
+		}
+	}
 	let closest_dist = INF
 	let selected_inter = null
 	objects.forEach( (o,i) => {
@@ -353,35 +272,20 @@ function closest_ray_surface_intersection(p, d) {
 		if( o.type == CUBE) {
 			o.triangles.forEach( trig => {
 				intersection = object_intersection( p, d, trig );
-				let result = returnClosest(intersection, closest_dist, selected_inter);
-				closest_dist = result[0];
-				selected_inter = result[1];
+				chooseClosest(intersection );
 			})
 		} else {
 			intersection = object_intersection( p, d, o );
-			let result = returnClosest(intersection, closest_dist, selected_inter);
-			closest_dist = result[0];
-			selected_inter = result[1];
+			chooseClosest(intersection );
 		}
 		
 	})
 	return selected_inter
 }
 
-function returnClosest( intersection, closest_dist, selected_inter) {
-	if( intersection == null )
-		return [closest_dist, selected_inter];
-	let dist = intersection.distance;
-	if ( dist < closest_dist ) {
-		closest_dist = dist;
-		selected_inter = intersection;
-	}
-	return [closest_dist, selected_inter];
-}
-
-function reflect( p, d, normal ) {
-	//TODO
-	return ray
+function reflect( d, normal ) {
+	// Rr = Ri - 2 N (Ri . N) 	
+	return subtract( d, scale( 2 * dot( d, normal ), normal ) )
 }
 
 function refract( p, d, normal, coeff ) {
@@ -411,6 +315,7 @@ function shade( p, d, inter ) {
 		// N normal vector
 		//	add_light(source)
 	let lvec = subtract( light.pos, inter.pos )
+	//console.log('lvec', lvec)
 	let L = normalize( lvec )
 	let ldist = lvec[0] / L[0]
 	let N = inter.normal
@@ -418,11 +323,16 @@ function shade( p, d, inter ) {
 	let ks = 0.7
 	let fatt = Math.min( 1 / ( 0.1 + 0.2 * ldist + 0.9 * Math.pow( ldist, 2 ) ), 1 ) //
 	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
+	let reflection = vec4(0,0,0,0)
 	if( inter.material.reflect > 0 )
-		res = add( res, reflect( p, d, inter.normal ) )
-	if ( inter.material.color[3] < 0.99 )
-		res = add( res, refract( ray, inter.normal, inter.refract) )
-	return vec4( clr[0] * I, clr[1] * I, clr[2] * I, clr[3] )
+		//reflection = outer_space_color
+		//console.log('inter.pos ', inter.pos)
+		//console.log('inter.normal ', inter.normal)
+		//console.log('d ', d)
+		reflection = trace( inter.pos, reflect( d, inter.normal ) )
+	// if ( inter.material.color[3] < 0.99 )
+		// res = add( res, refract( ray, inter.normal, inter.refract) )
+	return add( scale( I * (1-inter.material.reflect) , clr ), scale( inter.material.reflect, reflection ) )
 	
 }
 

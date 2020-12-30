@@ -2,9 +2,16 @@
 
 "use strict";
 
-var imageSize = 256;
+var imageSize = 128;
 let pixCount = imageSize*imageSize
 let renderMap = []
+
+let cam_pos = vec3(0,0,0)
+let vert_rot = 0
+let hor_rot = 0
+let front = vec3(0,0,1)
+let right = vec3(1,0,0)
+//let cam_dir = vec3(0,0,1)
 
 
 // Create image data
@@ -12,8 +19,8 @@ let renderMap = []
 // * 3 is for dimension
 var image = new Uint8ClampedArray(imageSize * imageSize * 3);
 
-let outer_space_color = vec4(0.1,0.2,0.3,1.0)
-let default_object_color = vec4(0.8,0.6,1.0,1.0)
+let outer_space_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
+let default_object_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
 
 const red = vec4(1.0,0.0,0.0,1.0)
 const green = vec4(0.0,1.0,0.0,1.0)
@@ -85,23 +92,23 @@ function generate_objects( generateCounts) {
 
 	// //Create Triangles
 	// for( let i = 0; i < generateCounts.triangle; i++ ) {
-	// 	objects.push(  
-	// 		createTriangle(
-	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-	// 			vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
-	// 			vec4( Math.random(), Math.random(), Math.random(), 1 ))
-	// 		)
+		// objects.push(  
+			// createTriangle(
+				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
+				// vec4( Math.random(), Math.random(), Math.random(), 1 ))
+			// )
 	// }
 
-	objects.push(
-		createCube(
-			vec3(0,0,20),
-			vec3(20,0,20),
-			vec3(0,20,20),
-			vec4( Math.random(), Math.random(), Math.random(), 1 )
-		)
-	)
+	// objects.push(
+		// createCube(
+			// vec3(0,0,20),
+			// vec3(20,0,20),
+			// vec3(0,20,20),
+			// vec4( Math.random(), Math.random(), Math.random(), 1 )
+		// )
+	// )
 	
 	objects.push(
 		{
@@ -279,7 +286,7 @@ function object_intersection(p, d, obj ) {
 		if ( dot( d, n ) == 0 )
 			return null
 		//sign of t might be changed (there was a minus here)
-		let t = ( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
+		let t = -( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
 		/* t = -(p.n + q.n) / d.n */
 		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
 		if ( ! point_in_triangle_test( pos, tri ) || t < 0 )
@@ -325,7 +332,7 @@ function closest_ray_surface_intersection(p, d) {
 		if( intersection == null )
 			return
 		let dist = intersection.distance;
-		if ( dist > 1.0 && dist < closest_dist ) {
+		if ( dist > 0.1 && dist < closest_dist ) {
 			closest_dist = dist;
 			selected_inter = intersection;
 		}
@@ -415,20 +422,31 @@ function raytrace()
 	let startTime = new Date()
 	let frameDuration = 1000 / 60
 	var loop = true;
-	setTimeout(function(){ loop = false; }, 1000);
+	//console.log('start', tempd)
+		//mult(trt, mult(rtt, ta) );
+	let hor_rtt = rotate(hor_rot, vec3(0,1,0) );
+	let right_xz = mult( hor_rtt, vec4(1,0,0,0) );
+	let vert_rtt = rotate( vert_rot, vec3(right_xz) );
+	let rotator = mult( vert_rtt, hor_rtt)
+	front = vec3( mult( rotator, vec4(0,0,1,0) ) )
+	right = vec3( mult( rotator, vec4(1,0,0,0) ) )
 	// Limit via time
 	while( (new Date) - startTime < 1000 / 60) {
 		let x = renderMap[drawIndex] % imageSize;
 		let y = Math.floor( renderMap[drawIndex] / imageSize );
 		let px = ( x / imageSize - 0.5 ) * 2
 		let py = ( y / imageSize - 0.5 ) * 2
-		let p = vec3( px, py, 1.0 )
-		let d = normalize( vec3( px, py, 1.0 ), false )
-		// Get a random color
-		var color = trace(p,d);
-
+		let p = add( cam_pos, vec3( px, py, 1.0 ) )
+		let tempd = vec4( normalize( vec3( px, py, 1.0 ), false ) )
+		
+		let rotated = mult( rotator, tempd )
+		//console.log('rotated', rotated)
+		
+		let d = vec3(rotated)
+		//console.log('end', d)
+		
 		// Trace Here
-
+		var color = trace(p,d);
 		// Set color values
 		image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
 		image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
@@ -440,10 +458,52 @@ function raytrace()
 	requestAnimationFrame(render);
 }
 
+window.addEventListener("keydown", function (event) {
+  if (event.defaultPrevented) {
+    return; // Do nothing if the event was already processed
+  }
+	
+  switch (event.keyCode) {
+	case 83:
+      // code for "down arrow" key press.
+	  cam_pos = subtract( cam_pos, front )
+      break;
+	case 87:
+      // code for "up arrow" key press.
+	  cam_pos = add( cam_pos, front )
+      break;
+    case 65:
+      // code for "left arrow" key press.
+	  cam_pos = subtract( cam_pos, right )
+      break;
+	case 68:
+      // code for "right arrow" key press.
+	  cam_pos = add( cam_pos, right )
+      break;
+    default:
+      return; // Quit when this doesn't handle the key event.
+  }
+
+  // Cancel the default action to avoid it being handled twice
+  event.preventDefault();
+}, true);
+// the last option dispatches the event to the listener first,
+// then dispatches event to window
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
-
+	
+	canvas.onclick = function() {
+		canvas.requestPointerLock();
+	}
+	
+	canvas.addEventListener('mousemove', e => {
+		let sensitivity = 0.05
+		hor_rot += e.movementX * sensitivity
+		vert_rot -= e.movementY * sensitivity
+	});
+	
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
@@ -502,7 +562,64 @@ window.onload = function init()
 	}
 
 	// Creates the objects
-	generate_objects( generateCounts)
+	generate_objects( generateCounts )
+	
+	// Add a new sphere
+	document.getElementById("addSphere").onclick = ()=> {
+		objects.push( {
+			type: SPHERE, 
+			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+			radius: Math.random() * 10, 
+			material: { 
+				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+				reflect: 0,
+				refract: 0
+			},
+			velocity: vec3(0,0,0), 
+		} );
+	}
+	document.getElementById("addCone").onclick = ()=> {
+		objects.push(
+			{
+				type: CONE,
+				center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+				radius: 10,//Math.random() * 10, 
+				height: 7,
+				material: { 
+					color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+					reflect: 0,
+					refract: 0
+				}, 
+	
+			}
+		)
+	}
+	document.getElementById("addCube").onclick = ()=> {
+		objects.push(
+			createCube(
+				vec3(0,0,20),
+				vec3(20,0,20),
+				vec3(0,20,20),
+				vec4( Math.random(), Math.random(), Math.random(), 1 )
+			)
+		)
+	}
+
+	let randomizedTrace = document.getElementById("randomizedTrace");
+	randomizedTrace.onclick = (e)=> {
+		if(randomizedTrace.checked) {
+			for(let i = pixCount - 1; i > 0; i-- ) {
+				let j = Math.floor(Math.random() * i);
+				let tmp = renderMap[i]
+				renderMap[i] = renderMap[j]
+				renderMap[j] = tmp
+			}
+		} else {
+			for (var i = 0; i < pixCount; i++) {
+				renderMap[i] = i;
+			}
+		}
+	}
 
 	// Fill the render map ? WHY THO
 	for (var i = 0; i < pixCount; i++) {

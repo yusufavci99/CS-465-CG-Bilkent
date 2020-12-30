@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 
+<link rel="stylesheet" href="texture.css">
 <script id="vertex-shader" type="x-shader/x-vertex">
 
 attribute vec2 vPosition;
@@ -38,8 +39,22 @@ main()
 <script type="text/javascript" src="texture.js"></script>
 
 <body>
-<canvas id="gl-canvas" width="1024" height="1024">
-Oops ... your browser doesn't support the HTML5 canvas element
-</canvas>
+<div id="contentDiv">
+    <div id="canvasDiv">
+        <canvas id="gl-canvas" width="1024" height="1024">
+            Oops ... your browser doesn't support the HTML5 canvas element
+        </canvas>
+    </div>
+    <div id="optionDiv">
+        <label class="container">Randomized Trace Order
+            <input type="checkbox" id="randomizedTrace" checked="checked">
+            <!-- <span class="checkmark"></span> -->
+        </label>
+        <button id="addSphere">Add Sphere</button>
+        <button id="addCone">Add Cone</button>
+        <button id="addCube">Add Cube</button>
+    </div>
+</div>
+
 </body>
 </html>

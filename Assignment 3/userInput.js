@@ -37,6 +37,15 @@ function addKeyboardInput() {
 }
 
 function addOptionButtons() {
+	document.addEventListener('pointerlockchange', ()=> {
+		entered = !entered;
+		if(entered) {
+			lockedMovement = false;
+		} else {
+			lockedMovement = true;
+		}	
+	}, false);
+
     // Add a new sphere
 	document.getElementById("addSphere").onclick = ()=> {
 		objects.push( {

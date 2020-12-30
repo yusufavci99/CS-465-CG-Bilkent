@@ -36,11 +36,11 @@ const red = vec4(1.0,0.0,0.0,1.0)
 const green = vec4(0.0,1.0,0.0,1.0)
 const blue = vec4(0.0,0.0,1.0,1.0)
 
-const SPHERE = 0
-const TRIANGLE = 1
-const CUBE = 2
-const CONE = 3
-const INF = 9999999
+const SPHERE = 0;
+const TRIANGLE = 1;
+const CUBE = 2;
+const CONE = 3;
+const INF = 9999999;
 
 var drawIndex = 0
 var useTexture = false;
@@ -286,7 +286,7 @@ function perlin( x,  y) {
 
 function object_intersection(p, d, obj ) {
 	function cone_intersection(p, d, cone) {
-		//algorithm is adapted from
+		// Cone intersection algorithm is adapted from
 		//https://github.com/iceman201/RayTracing/blob/master/Ray%20tracing/Cone.cpp
 		let px = p[0];
 		let py = p[1];
@@ -473,15 +473,21 @@ function shade( p, d, inter, cutOff) {
 	let k = 0.5
 	let ks = 0.7
 	let fatt = Math.min( 1 / ( 0.1 + 0.2 * ldist + 0.9 * Math.pow( ldist, 2 ) ), 1 ) //
-	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
+	let I = 0.3;
 	let reflection = vec4(0,0,0,0)
+
+	// Not sure about here
+	let shadowCheck = closest_ray_surface_intersection(inter.pos, L);
+	if( shadowCheck == null || shadowCheck.dist > ldist ) {
+		I += light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // ;
+	}
 
 	if( inter.material.reflect > 0 )
 		//reflection = outer_space_color
 		//console.log('inter.pos ', inter.pos)
 		//console.log('inter.normal ', inter.normal)
 		//console.log('d ', d)
-		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1)
+		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1);
 	// if ( inter.material.color[3] < 0.99 )
 		// res = add( res, refract( ray, inter.normal, inter.refract) )
 

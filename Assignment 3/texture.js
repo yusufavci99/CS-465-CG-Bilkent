@@ -3,8 +3,8 @@
 "use strict";
 
 var imageSize = 256;
-let pixCount = imageSize*imageSize
-let renderMap = []
+var pixCount = imageSize*imageSize;
+var renderMap = [];
 
 let cam_pos = vec3(0,0,0)
 let vert_rot = 0
@@ -19,13 +19,16 @@ let noise_texture = Array.from(Array(noise_texture_size), () => new Array(noise_
 let perlin_steps = 4;
 var cutOffDepth = 10;
 var checkers;
+var reflectionVal = 0.5;
+var allowMovement = true;
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped. Clamped: 0-255
 // * 3 is for dimension
 var image = new Uint8ClampedArray(imageSize * imageSize * 3);
 
-let outer_space_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
+// Less red and green
+var outer_space_color = vec4(Math.random() * 0.6, Math.random() * 0.8, Math.random(),1.0)
 let default_object_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
 
 const white = vec4(1.0,1.0,1.0,1.0)
@@ -40,6 +43,7 @@ const CONE = 3
 const INF = 9999999
 
 var drawIndex = 0
+var useTexture = false;
 
 // Texture coords for quad
 var canvas;
@@ -93,7 +97,8 @@ function generate_objects( generateCounts) {
 				reflect: 0.5,
 				refract: 0
 			},
-			velocity: vec3(0,0,0), 
+			velocity: vec3(0,0,0),
+			texture: false,
 		} )
 	}
 
@@ -133,13 +138,13 @@ function generate_objects( generateCounts) {
 	// )
 }
 
-function createCube(a, b, c, color) {
+function createCube(a, b, c, size, color) {
 	let cube = {
 		type: CUBE,
 		triangles: [],
 	}
 	
-	var sc = 10
+	var sc = size;
 	
 	var points = [
 		vec3(-sc,-sc,-sc), //0
@@ -152,24 +157,20 @@ function createCube(a, b, c, color) {
 		vec3(sc,sc,sc) //7
 	]
 	
-	// let rtt = rotate(0, 1,0,0);
 	let rtt = rotate(Math.random() * 360 - 180, normalize(vec3(Math.random(), Math.random(), Math.random())));
-	let trt = translate( 0, 0, 50 );
-	// let trt = translate( 0, 0, 50 );
+	let trt = translate( a, b, c );
 	for (let i = 0; i < 8; i++ ) {
-		//console.log(points[i])
 
 		let ta =  vec4(points[i]);
 		
 		let tmpa = mult(trt, mult(rtt, ta) );
 		
 		points[i] = vec3(tmpa)
-		//console.log(points[i])
 	}
 	
 	let ord = [ 6,4,7, 7,4,5, 6,2,4, 2,0,4, 7,5,3, 3,5,1, 2,3,0, 3,1,0, 2,6,3, 3,6,7, 0,1,4, 1,5,4 ];
 	
-	for( let i = 0; i < 36; i += 3 ) {
+	for( let i = 0; i < ord.length; i += 3 ) {
 		//console.log(i, ord[i])
 		cube.triangles.push(
 			createTriangle(
@@ -192,17 +193,17 @@ function createTriangle(a, b, c, color) {
 		c: c,
 		material: { 
 			color: color,
-			reflect: 0.7,
-			refract: 0
+			reflect: reflectionVal,
+			refract: 0,
+			texture: false,
 		} 
 	}
 }
 
 function update_objects() {
 	objects.forEach( (o, i) => {
-		if( o.type == SPHERE ) {
+		if( o.type == SPHERE && allowMovement) {
 			o.velocity = add(o.velocity, vec3( Math.random() * 0.002 - 0.001, Math.random() * 0.002 - 0.001, Math.random() * 0.002 - 0.001));
-			// o.center = add( o.center, vec3( 0.01, 0.01, 0.01 ) );
 			o.center = add( o.center, o.velocity);
 		}
 	});
@@ -475,20 +476,6 @@ function shade( p, d, inter, cutOff) {
 	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
 	let reflection = vec4(0,0,0,0)
 
-	// Used below code to map texture to shape
-	// https://stackoverflow.com/questions/22420778/texture-mapping-in-a-ray-tracing-for-sphere-in-c
-	let tmp1 = Math.acos(N[2]);
-	// Assumes complex
-	let tmp2 = Math.atan2(N[1], N[0]);
-	let v = tmp1 / Math.PI;
-	if (tmp2 < 0) {
-		tmp2 += 2 * Math.PI;
-	}
-	let u = tmp2 / (2 * Math.PI);
-	
-	let width = Math.floor(u * 64);
-	let height = Math.floor(v * 64);
-
 	if( inter.material.reflect > 0 )
 		//reflection = outer_space_color
 		//console.log('inter.pos ', inter.pos)
@@ -497,11 +484,26 @@ function shade( p, d, inter, cutOff) {
 		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1)
 	// if ( inter.material.color[3] < 0.99 )
 		// res = add( res, refract( ray, inter.normal, inter.refract) )
-	console.log(width);
-	console.log(height);
-	console.log(checkers[width][height]);
-	return add( scale( I * (1-inter.material.reflect) , mix(clr, checkers[height][width],0.5) ), scale( inter.material.reflect, reflection ) )
-	
+
+	// Used below code to map texture to shape
+	// https://stackoverflow.com/questions/22420778/texture-mapping-in-a-ray-tracing-for-sphere-in-c
+	if(inter.material.texture) {
+		let tmp1 = Math.acos(N[2]);
+		// Assumes complex
+		let tmp2 = Math.atan2(N[1], N[0]);
+		let v = tmp1 / Math.PI;
+		if (tmp2 < 0) {
+			tmp2 += 2 * Math.PI;
+		}
+		let u = tmp2 / (2 * Math.PI);
+		
+		let width = Math.floor(u * 64);
+		let height = Math.floor(v * 64);
+
+		return add( scale( I * (1-inter.material.reflect) , mix(clr, checkers[height][width],0.5) ), scale( inter.material.reflect, reflection ) );
+	} else {
+		return add( scale( I * (1-inter.material.reflect) , clr), scale( inter.material.reflect, reflection ) );
+	}	
 }
 
 //ray is always represented by p, d
@@ -631,7 +633,6 @@ window.onload = function init()
 		}
 		blk = !blk;
 	}
-	console.log(checkers);
 
     var pointsArray = [];
     var texCoordsArray = [];

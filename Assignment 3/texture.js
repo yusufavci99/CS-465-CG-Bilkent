@@ -12,12 +12,12 @@ let hor_rot = 0
 let front = vec3(0,0,1)
 let right = vec3(1,0,0)
 //let cam_dir = vec3(0,0,1)
-let elapsed_time = 0
+let elapsed_time = 0;
 
-let noise_texture_size = 512
-let noise_texture = Array.from(Array(noise_texture_size), () => new Array(noise_texture_size) )
-let perlin_steps = 4
-
+let noise_texture_size = 512;
+let noise_texture = Array.from(Array(noise_texture_size), () => new Array(noise_texture_size));
+let perlin_steps = 4;
+var cutOffDepth = 10;
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped. Clamped: 0-255
@@ -452,7 +452,7 @@ function refract( p, d, normal, coeff ) {
 // You must restrict it to a finite cone by extending the implicit equation as described in the following page.
 // https://math.stackexchange.com/questions/207753/parametric-and-implicit-representation-of-a-cone
 
-function shade( p, d, inter ) {
+function shade( p, d, inter, cutOff) {
 	let clr = inter.material.color
 	//TODO more light sources
 	//TODO reject light if it's not in the from of the sphere
@@ -473,12 +473,13 @@ function shade( p, d, inter ) {
 	let fatt = Math.min( 1 / ( 0.1 + 0.2 * ldist + 0.9 * Math.pow( ldist, 2 ) ), 1 ) //
 	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
 	let reflection = vec4(0,0,0,0)
+
 	if( inter.material.reflect > 0 )
 		//reflection = outer_space_color
 		//console.log('inter.pos ', inter.pos)
 		//console.log('inter.normal ', inter.normal)
 		//console.log('d ', d)
-		reflection = trace( inter.pos, reflect( d, inter.normal ) )
+		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1)
 	// if ( inter.material.color[3] < 0.99 )
 		// res = add( res, refract( ray, inter.normal, inter.refract) )
 	return add( scale( I * (1-inter.material.reflect) , clr ), scale( inter.material.reflect, reflection ) )
@@ -486,10 +487,10 @@ function shade( p, d, inter ) {
 }
 
 //ray is always represented by p, d
-function trace(p, d) {
+function trace(p, d, cutOff) {
 	let intersection = closest_ray_surface_intersection(p, d)
-	if ( intersection )
-		return shade(p, d, intersection)
+	if ( intersection && cutOff > 0)
+		return shade(p, d, intersection, cutOff);
 	//return outer_space_color
 	//console.log(Math.floor(100 * d[0]) % imageSize)
 	let c1 = noise_texture[ Math.floor( noise_texture_size * (d[1]+1) / 2 ) % noise_texture_size ]
@@ -498,7 +499,7 @@ function trace(p, d) {
 	let c2 = noise_texture[ Math.floor( noise_texture_size * (d[0] + elapsed_time / 20000 +1) / 2 ) % noise_texture_size ] 
 		[ Math.floor( noise_texture_size * (d[1] + elapsed_time / 40000 + 1) / 2 ) % noise_texture_size]
 	//return vec4( rand, rand, rand, 1.0 )
-	let rand = c1 + c2
+	let rand = c1 + c2;
 	return add( scale( 1- rand, outer_space_color  ), scale( rand, white  ) )
 	//return outer_space_color
 }
@@ -535,7 +536,7 @@ function raytrace()
 			//console.log('end', d)
 			
 			// Trace Here
-			var color = trace(p,d);
+			var color = trace(p,d, cutOffDepth);
 			//var rand = noise_texture[y*2%noise_texture_size][x*2%noise_texture_size]
 			//var color = vec4( rand, rand, rand, 1.0)
 			// Set color values
@@ -550,37 +551,7 @@ function raytrace()
 	requestAnimationFrame(render);
 }
 
-window.addEventListener("keydown", function (event) {
-  if (event.defaultPrevented) {
-    return; // Do nothing if the event was already processed
-  }
-	
-  switch (event.keyCode) {
-	case 83:
-      // code for "down arrow" key press.
-	  cam_pos = subtract( cam_pos, front )
-      break;
-	case 87:
-      // code for "up arrow" key press.
-	  cam_pos = add( cam_pos, front )
-      break;
-    case 65:
-      // code for "left arrow" key press.
-	  cam_pos = subtract( cam_pos, right )
-      break;
-	case 68:
-      // code for "right arrow" key press.
-	  cam_pos = add( cam_pos, right )
-      break;
-    default:
-      return; // Quit when this doesn't handle the key event.
-  }
-
-  // Cancel the default action to avoid it being handled twice
-  event.preventDefault();
-}, true);
-// the last option dispatches the event to the listener first,
-// then dispatches event to window
+addKeyboardInput();
 
 window.onload = function init()
 {
@@ -664,63 +635,8 @@ window.onload = function init()
 	//console.log(noise_texture)
 	// Creates the objects
 	generate_objects( generateCounts )
-	
-	// Add a new sphere
-	document.getElementById("addSphere").onclick = ()=> {
-		objects.push( {
-			type: SPHERE, 
-			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-			radius: Math.random() * 10, 
-			material: { 
-				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-				reflect: 0,
-				refract: 0
-			},
-			velocity: vec3(0,0,0), 
-		} );
-	}
-	document.getElementById("addCone").onclick = ()=> {
-		objects.push(
-			{
-				type: CONE,
-				center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-				radius: 10,//Math.random() * 10, 
-				height: 7,
-				material: { 
-					color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-					reflect: 0,
-					refract: 0
-				}, 
-	
-			}
-		)
-	}
-	document.getElementById("addCube").onclick = ()=> {
-		objects.push(
-			createCube(
-				vec3(0,0,20),
-				vec3(20,0,20),
-				vec3(0,20,20),
-				vec4( Math.random(), Math.random(), Math.random(), 1 )
-			)
-		)
-	}
 
-	let randomizedTrace = document.getElementById("randomizedTrace");
-	randomizedTrace.onclick = (e)=> {
-		if(randomizedTrace.checked) {
-			for(let i = pixCount - 1; i > 0; i-- ) {
-				let j = Math.floor(Math.random() * i);
-				let tmp = renderMap[i]
-				renderMap[i] = renderMap[j]
-				renderMap[j] = tmp
-			}
-		} else {
-			for (var i = 0; i < pixCount; i++) {
-				renderMap[i] = i;
-			}
-		}
-	}
+	addOptionButtons();
 
 	// Fill the render map ? WHY THO
 	for (var i = 0; i < pixCount; i++) {

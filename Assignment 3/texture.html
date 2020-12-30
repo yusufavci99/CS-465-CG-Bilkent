@@ -36,6 +36,9 @@ main()
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
 <script type="text/javascript" src="Common/initShaders.js"></script>
 <script type="text/javascript" src="Common/MV.js"></script>
+
+<!-- Our Files -->
+<script type="text/javascript" src="userInput.js"></script>
 <script type="text/javascript" src="texture.js"></script>
 
 <body>
@@ -53,6 +56,10 @@ main()
         <button id="addSphere">Add Sphere</button>
         <button id="addCone">Add Cone</button>
         <button id="addCube">Add Cube</button>
+        <div>
+            Cutoff Depth <input id="cutOffDepth" type="range"
+            min="1" max="20" step="1" value="10"/> <span id="cutValue">10</span>
+        </div>
     </div>
 </div>
 

@@ -18,6 +18,7 @@ let noise_texture_size = 512;
 let noise_texture = Array.from(Array(noise_texture_size), () => new Array(noise_texture_size));
 let perlin_steps = 4;
 var cutOffDepth = 10;
+var checkers;
 
 // Create image data
 // Here i used Uint8ClampedArray instead of Uint8Array so that it is clamped. Clamped: 0-255
@@ -97,39 +98,39 @@ function generate_objects( generateCounts) {
 	}
 
 	// //Create Triangles
-	// for( let i = 0; i < generateCounts.triangle; i++ ) {
-		// objects.push(  
-			// createTriangle(
-				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-				// vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
-				// vec4( Math.random(), Math.random(), Math.random(), 1 ))
-			// )
-	// }
+	for( let i = 0; i < generateCounts.triangle; i++ ) {
+		objects.push(  
+			createTriangle(
+				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
+				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
+				vec4( Math.random(), Math.random(), Math.random(), 1 ))
+			)
+	}
 
-	objects.push(
-		createCube(
-			vec3(0,0,20),
-			vec3(20,0,20),
-			vec3(0,20,20),
-			vec4( Math.random(), Math.random(), Math.random(), 1 )
-		)
-	)
+	// objects.push(
+	// 	createCube(
+	// 		vec3(0,0,20),
+	// 		vec3(20,0,20),
+	// 		vec3(0,20,20),
+	// 		vec4( Math.random(), Math.random(), Math.random(), 1 )
+	// 	)
+	// )
 	
-	objects.push(
-		{
-			type: CONE,
-			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-			radius: 10,//Math.random() * 10, 
-			height: 7,
-			material: { 
-				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-				reflect: 0.9,
-				refract: 0
-			}, 
+	// objects.push(
+	// 	{
+	// 		type: CONE,
+	// 		center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
+	// 		radius: 10,//Math.random() * 10, 
+	// 		height: 7,
+	// 		material: { 
+	// 			color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
+	// 			reflect: 0.9,
+	// 			refract: 0
+	// 		}, 
 
-		}
-	)
+	// 	}
+	// )
 }
 
 function createCube(a, b, c, color) {
@@ -474,6 +475,20 @@ function shade( p, d, inter, cutOff) {
 	let I = 0.3 + light.intensity * fatt * ( ( k * dot( N, L ) ) + ks * Math.pow( dot( N, L ), 4 ) ) // 
 	let reflection = vec4(0,0,0,0)
 
+	// Used below code to map texture to shape
+	// https://stackoverflow.com/questions/22420778/texture-mapping-in-a-ray-tracing-for-sphere-in-c
+	let tmp1 = Math.acos(N[2]);
+	// Assumes complex
+	let tmp2 = Math.atan2(N[1], N[0]);
+	let v = tmp1 / Math.PI;
+	if (tmp2 < 0) {
+		tmp2 += 2 * Math.PI;
+	}
+	let u = tmp2 / (2 * Math.PI);
+	
+	let width = Math.floor(u * 64);
+	let height = Math.floor(v * 64);
+
 	if( inter.material.reflect > 0 )
 		//reflection = outer_space_color
 		//console.log('inter.pos ', inter.pos)
@@ -482,7 +497,10 @@ function shade( p, d, inter, cutOff) {
 		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1)
 	// if ( inter.material.color[3] < 0.99 )
 		// res = add( res, refract( ray, inter.normal, inter.refract) )
-	return add( scale( I * (1-inter.material.reflect) , clr ), scale( inter.material.reflect, reflection ) )
+	console.log(width);
+	console.log(height);
+	console.log(checkers[width][height]);
+	return add( scale( I * (1-inter.material.reflect) , mix(clr, checkers[height][width],0.5) ), scale( inter.material.reflect, reflection ) )
 	
 }
 
@@ -580,6 +598,41 @@ window.onload = function init()
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
+	// EXTRA
+	
+	function makeArray(d1, d2) {
+		var arr = [];
+		for(let i = 0; i < d2; i++) {
+			arr.push(new Array(d1));
+		}
+		return arr;
+	}
+
+	// Checkers Pattern Texture
+	checkers = makeArray(64,64);
+	let blk = false;
+	for(let i = 0; i < checkers.length; i += 4) {
+		for(let j = 0; j < checkers[i].length; j+= 4) {
+			if(blk) {
+				for(let k = i; k < i + 4; k++) {
+					for(let l = j; l < j + 4; l++) {
+						checkers[k][l] = vec4(0.0,0.0,0.0,1);
+					}
+				}
+				blk = false;
+			} else {
+				for(let k = i; k < i + 4; k++) {
+					for(let l = j; l < j + 4; l++) {
+						checkers[k][l] = vec4(1.0,1.0,1.0,1.0);
+					}
+				}
+				blk = true;
+			}
+		}
+		blk = !blk;
+	}
+	console.log(checkers);
+
     var pointsArray = [];
     var texCoordsArray = [];
 
@@ -622,8 +675,8 @@ window.onload = function init()
 	
 	// How many of each object should be generated
 	let generateCounts = {
-		sphere: 5,
-		triangle: 5,
+		sphere: 0,
+		triangle: 0,
 	}
 	
 	//generate noise texture
@@ -652,7 +705,6 @@ window.onload = function init()
 	}
     render();
 }
-
 
 function render() {
     raytrace();

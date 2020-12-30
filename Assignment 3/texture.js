@@ -579,6 +579,9 @@ function raytrace()
 
 addKeyboardInput();
 
+var lockedMovement = true;
+var entered = false;
+
 window.onload = function init()
 {
     canvas = document.getElementById( "gl-canvas" );
@@ -588,11 +591,13 @@ window.onload = function init()
 	}
 	
 	canvas.addEventListener('mousemove', e => {
-		let sensitivity = 0.05
-		//console.log(e.movementX)
-		//console.log(e.movementY)
-		hor_rot += e.movementX * sensitivity
-		vert_rot -= e.movementY * sensitivity
+		if(!lockedMovement) {
+			let sensitivity = 0.05
+			//console.log(e.movementX)
+			//console.log(e.movementY)
+			hor_rot += e.movementX * sensitivity
+			vert_rot -= e.movementY * sensitivity
+		}
 	});
 	
     gl = WebGLUtils.setupWebGL( canvas );

@@ -20,6 +20,7 @@ let perlin_steps = 4;
 var cutOffDepth = 10;
 var checkers;
 var reflectionVal = 0.5;
+var transparencyVal = 0.0
 var allowMovement = true;
 
 // Create image data
@@ -68,7 +69,7 @@ var intersection = {
 	distance: 0, 
 	pos: vec3(0.0,0.0,0.0),
 	normal: vec3(0.0,0.0,0.0), 
-	material: {clr: green, reflect: 0, refract:0 }, count:0 
+	material: {clr: green, reflect: 0, transparent:0 }, count:0 
 } //TODO
 var light = { pos: vec3(-20, 0, 20), intensity: 1.0 } //TODO
 
@@ -83,60 +84,6 @@ Shade(point, ray)	// return radiance of light leaving
 	
 }
 */
-
-function generate_objects( generateCounts) {
-
-	//Create Spheres
-	for( let i = 0; i < generateCounts.sphere; i++ ) {
-		objects.push( {
-			type: SPHERE, 
-			center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-			radius: Math.random() * 10, 
-			material: { 
-				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-				reflect: 0.5,
-				refract: 0
-			},
-			velocity: vec3(0,0,0),
-			texture: false,
-		} )
-	}
-
-	// //Create Triangles
-	for( let i = 0; i < generateCounts.triangle; i++ ) {
-		objects.push(  
-			createTriangle(
-				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15), 
-				vec3(Math.random() * 30 - 15, Math.random() * 30 - 15, 20 + Math.random() * 30 - 15),
-				vec4( Math.random(), Math.random(), Math.random(), 1 ))
-			)
-	}
-
-	// objects.push(
-	// 	createCube(
-	// 		vec3(0,0,20),
-	// 		vec3(20,0,20),
-	// 		vec3(0,20,20),
-	// 		vec4( Math.random(), Math.random(), Math.random(), 1 )
-	// 	)
-	// )
-	
-	// objects.push(
-	// 	{
-	// 		type: CONE,
-	// 		center: vec3( Math.random() * 30 - 15, Math.random() * 30 - 15, 30 + Math.random() * 30 - 15),
-	// 		radius: 10,//Math.random() * 10, 
-	// 		height: 7,
-	// 		material: { 
-	// 			color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
-	// 			reflect: 0.9,
-	// 			refract: 0
-	// 		}, 
-
-	// 	}
-	// )
-}
 
 function createCube(a, b, c, size, color) {
 	let cube = {
@@ -194,7 +141,7 @@ function createTriangle(a, b, c, color) {
 		material: { 
 			color: color,
 			reflect: reflectionVal,
-			refract: 0,
+			transparency: transparencyVal,
 			texture: false,
 		} 
 	}
@@ -475,6 +422,7 @@ function shade( p, d, inter, cutOff) {
 	let fatt = Math.min( 1 / ( 0.1 + 0.2 * ldist + 0.9 * Math.pow( ldist, 2 ) ), 1 ) //
 	let I = 0.3;
 	let reflection = vec4(0,0,0,0)
+	let translumina = vec4(0,0,0,0)
 
 	// Not sure about here
 	let shadowCheck = closest_ray_surface_intersection(inter.pos, L);
@@ -488,11 +436,12 @@ function shade( p, d, inter, cutOff) {
 		//console.log('inter.normal ', inter.normal)
 		//console.log('d ', d)
 		reflection = trace( inter.pos, reflect( d, inter.normal ), cutOff - 1);
-	// if ( inter.material.color[3] < 0.99 )
-		// res = add( res, refract( ray, inter.normal, inter.refract) )
+	if ( inter.material.reflect > 0 )
+		translumina = trace( inter.pos, d, cutOff - 1 )
 
 	// Used below code to map texture to shape
 	// https://stackoverflow.com/questions/22420778/texture-mapping-in-a-ray-tracing-for-sphere-in-c
+	let res = null
 	if(inter.material.texture) {
 		let tmp1 = Math.acos(N[2]);
 		// Assumes complex
@@ -505,11 +454,13 @@ function shade( p, d, inter, cutOff) {
 		
 		let width = Math.floor(u * 64);
 		let height = Math.floor(v * 64);
-
-		return add( scale( I * (1-inter.material.reflect) , mix(clr, checkers[height][width],0.5) ), scale( inter.material.reflect, reflection ) );
+		
+		res = add( scale( I * (1-inter.material.reflect) , mix(clr, checkers[height][width],0.5) ), scale( inter.material.reflect, reflection ) );
 	} else {
-		return add( scale( I * (1-inter.material.reflect) , clr), scale( inter.material.reflect, reflection ) );
+		res = add( scale( I * (1-inter.material.reflect) , clr), scale( inter.material.reflect, reflection ) );
 	}	
+	res = mix( res, translumina, inter.material.transparency )
+	return res
 }
 
 //ray is always represented by p, d
@@ -681,10 +632,6 @@ window.onload = function init()
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
 	
 	// How many of each object should be generated
-	let generateCounts = {
-		sphere: 0,
-		triangle: 0,
-	}
 	
 	//generate noise texture
 	for( let y = 0; y < noise_texture_size; y++ )
@@ -694,8 +641,6 @@ window.onload = function init()
 
 	//console.log(noise_texture)
 	// Creates the objects
-	generate_objects( generateCounts )
-
 	addOptionButtons();
 
 	// Fill the render map ? WHY THO

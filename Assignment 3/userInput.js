@@ -46,7 +46,7 @@ function addOptionButtons() {
 			material: { 
 				color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
 				reflect: reflectionVal,
-				refract: 0,
+				transparency: transparencyVal,
 				texture: useTexture,
 			},
 			velocity: vec3(0,0,0),
@@ -62,7 +62,7 @@ function addOptionButtons() {
 				material: { 
 					color: vec4( Math.random(), Math.random(), Math.random(), 1 ),
 					reflect: reflectionVal,
-					refract: 0,
+					transparency: transparencyVal,
 					texture: false,
 				}, 
 	
@@ -115,6 +115,11 @@ function addOptionButtons() {
 	document.getElementById("reflection").oninput = (event) => {
         reflectionVal = parseFloat( event.target.value );
         document.getElementById("reflectValue").innerText = event.target.value;
+	};
+	
+	document.getElementById("transparency").oninput = (event) => {
+        transparencyVal = parseFloat( event.target.value );
+        document.getElementById("transparencyValue").innerText = event.target.value;
 	};
 	
 	let backgroundColorElem = document.getElementById("backgroundColor");

@@ -39,7 +39,8 @@ function addKeyboardInput() {
 function addOptionButtons() {
 	document.addEventListener('pointerlockchange', ()=> {
 		entered = !entered;
-		if(entered) {
+		if(document.pointerLockElement === canvas ||
+			document.mozPointerLockElement === canvas) {
 			lockedMovement = false;
 		} else {
 			lockedMovement = true;

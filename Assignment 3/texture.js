@@ -2,7 +2,7 @@
 
 "use strict";
 
-var imageSize = 128;
+var imageSize = 256;
 let pixCount = imageSize*imageSize
 let renderMap = []
 
@@ -12,6 +12,11 @@ let hor_rot = 0
 let front = vec3(0,0,1)
 let right = vec3(1,0,0)
 //let cam_dir = vec3(0,0,1)
+let elapsed_time = 0
+
+let noise_texture_size = 512
+let noise_texture = Array.from(Array(noise_texture_size), () => new Array(noise_texture_size) )
+let perlin_steps = 4
 
 
 // Create image data
@@ -22,6 +27,7 @@ var image = new Uint8ClampedArray(imageSize * imageSize * 3);
 let outer_space_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
 let default_object_color = vec4(Math.random(), Math.random(), Math.random() ,1.0)
 
+const white = vec4(1.0,1.0,1.0,1.0)
 const red = vec4(1.0,0.0,0.0,1.0)
 const green = vec4(0.0,1.0,0.0,1.0)
 const blue = vec4(0.0,0.0,1.0,1.0)
@@ -101,14 +107,14 @@ function generate_objects( generateCounts) {
 			// )
 	// }
 
-	// objects.push(
-		// createCube(
-			// vec3(0,0,20),
-			// vec3(20,0,20),
-			// vec3(0,20,20),
-			// vec4( Math.random(), Math.random(), Math.random(), 1 )
-		// )
-	// )
+	objects.push(
+		createCube(
+			vec3(0,0,20),
+			vec3(20,0,20),
+			vec3(0,20,20),
+			vec4( Math.random(), Math.random(), Math.random(), 1 )
+		)
+	)
 	
 	objects.push(
 		{
@@ -132,7 +138,7 @@ function createCube(a, b, c, color) {
 		triangles: [],
 	}
 	
-	var sc = 100
+	var sc = 10
 	
 	var points = [
 		vec3(-sc,-sc,-sc), //0
@@ -147,7 +153,7 @@ function createCube(a, b, c, color) {
 	
 	// let rtt = rotate(0, 1,0,0);
 	let rtt = rotate(Math.random() * 360 - 180, normalize(vec3(Math.random(), Math.random(), Math.random())));
-	let trt = translate( 0, 0, 500 );
+	let trt = translate( 0, 0, 50 );
 	// let trt = translate( 0, 0, 50 );
 	for (let i = 0; i < 8; i++ ) {
 		//console.log(points[i])
@@ -201,29 +207,79 @@ function update_objects() {
 	});
 }
 
-function point_in_triangle_test( p, tri ) {
-/* algorithm taken from https://blackpawn.com/texts/pointinpoly/ */
-	//console.log(tri)
-	// Compute vectors        
-	let v0 = subtract( tri.c, tri.a )
-	let v1 = subtract( tri.b, tri.a )
-	let v2 = subtract( p, tri.a )
 
-	// Compute dot products
-	let dot00 = dot(v0, v0)
-	let dot01 = dot(v0, v1)
-	let dot02 = dot(v0, v2)
-	let dot11 = dot(v1, v1)
-	let dot12 = dot(v1, v2)
+// Perlin noise algorithm from
+// https://en.wikipedia.org/wiki/Perlin_noise
+// Compute Perlin noise at coordinates x, y
+function perlin( x,  y) {
+	/* Function to linearly interpolate between a0 and a1
+	 * Weight w should be in the range [0.0, 1.0]
+	 */
+	function interpolate( a0,  a1,  w) {
+		/* // You may want clamping by inserting:
+		 * if (0.0 > w) return a0;
+		 * if (1.0 < w) return a1;
+		 */
+		return (a1 - a0) * w + a0;
+		/* // Use this cubic interpolation [[Smoothstep]] instead, for a smooth appearance:
+		 * return (a1 - a0) * (3.0 - w * 2.0) * w * w + a0;
+		 *
+		 * // Use [[Smootherstep]] for an even smoother result with a second derivative equal to zero on boundaries:
+		 * return (a1 - a0) * (x * (w * 6.0 - 15.0) * w * w *w + 10.0) + a0;
+		 */
+	}
 
-	// Compute barycentric coordinates
-	let invDenom = 1 / (dot00 * dot11 - dot01 * dot01)
-	let u = (dot11 * dot02 - dot01 * dot12) * invDenom
-	let v = (dot00 * dot12 - dot01 * dot02) * invDenom
+	/* Create random direction vector
+	 */
+	function randomGradient( ix, iy) {
+		// Random float. No precomputed gradients mean this works for any number of grid coordinates
+		let random = 2920 * Math.sin(ix * 21942 + iy * 171324 + 8912) * Math.cos(ix * 23157 * iy * 217832 + 9758);
+		return vec2( Math.cos(random), Math.sin(random) );
+	}
 
-	// Check if point is in triangle
-	return (u >= 0) && (v >= 0) && (u + v < 1)
+	// Computes the dot product of the distance and gradient vectors.
+	function dotGridGradient( ix,  iy,  x,  y) {
+		// Get gradient from integer coordinates
+		let gradient = randomGradient(ix % perlin_steps, iy % perlin_steps);
 
+		// Compute the distance vector
+		let dx = x - ix;
+		let dy = y - iy;
+
+		// Compute the dot-product
+		return (dx*gradient[0] + dy*gradient[1]);
+	}
+    
+	// Determine grid cell coordinates
+    let x0 = Math.floor(x);
+    let x1 = (x0 + 1);
+    let y0 = Math.floor(y);
+    let y1 = (y0 + 1);
+
+    // Determine interpolation weights
+    // Could also use higher order polynomial/s-curve here
+    let sx = x - x0;
+    let sy = y - y0;
+	
+	//console.log('sx', sx, 'sy', sy)
+
+    // Interpolate between grid point gradients
+    let n0, n1;
+
+    n0 = dotGridGradient(x0, y0, x, y);
+    n1 = dotGridGradient(x1, y0, x, y);
+    let ix0 = interpolate(n0, n1, sx);
+	
+	//console.log('n0', n1, 'n0', n1)
+
+    n0 = dotGridGradient(x0, y1, x, y);
+    n1 = dotGridGradient(x1, y1, x, y);
+    let ix1 = interpolate(n0, n1, sx);
+	
+	//console.log('ix0', ix0, 'ix1', ix1)
+
+    let value = interpolate(ix0, ix1, sy);
+    return value;
 }
 
 function object_intersection(p, d, obj ) {
@@ -280,19 +336,40 @@ function object_intersection(p, d, obj ) {
 		and point in polygon test (3-D or 2-D) */
 		/* plane = (x-q) . n*/
 		/*n = crossproduct of 2 edges */
-		let edge1 = subtract( tri.b, tri.a )
-		let edge2 = subtract( tri.c, tri.a )
-		let n = cross( edge1, edge2 )
-		if ( dot( d, n ) == 0 )
-			return null
-		//sign of t might be changed (there was a minus here)
-		let t = -( dot( p, n) + dot( tri.b, n ) ) / dot( d, n ) 
-		/* t = -(p.n + q.n) / d.n */
-		let pos = add( p, vec3( d[0] * t, d[1] * t, d[2] * t ) )
-		if ( ! point_in_triangle_test( pos, tri ) || t < 0 )
-			return null
-		else
-			return { distance: t, pos: pos, normal: normalize( n ), material: tri.material, count:0 } 
+		//algorithm is
+		//https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+		let EPSILON = 0.0000001;
+		let vertex0 = tri.a;
+		let vertex1 = tri.b;
+		let vertex2 = tri.c;
+
+		let edge1 = subtract(vertex1, vertex0);
+		let edge2 = subtract(vertex2, vertex0);
+		let h = cross(d, edge2);
+		let a = dot(edge1, h);
+
+		if (a > -EPSILON && a < EPSILON)
+			return INF;    // This ray is parallel to this triangle.
+		
+		let f = 1.0/a;
+		let s = subtract(p, vertex0);
+		let u = f * dot(s,h);
+		if (u < 0.0 || u > 1.0)
+			return INF;
+
+		let q = cross(s, edge1);
+		let v = f * dot(d, q);
+		if (v < 0.0 || u + v > 1.0)
+			return INF;
+		// At this stage we can compute t to find out where the intersection point is on the line.
+		let t = f * dot(edge2,q);
+		if (t!= undefined && t > EPSILON) // ray intersection
+		{
+			let pos = add( p, scale( t, d ) )
+			return { distance: t, pos: pos, normal: normalize( cross( edge1, edge2 ) ), material: tri.material, count:0 };
+		}
+		else // This means that there is a line intersection but not a ray intersection.
+			return INF;
 	}
 	function sphere_intersection(p, d, sph) {
 	//http://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/
@@ -413,14 +490,24 @@ function trace(p, d) {
 	let intersection = closest_ray_surface_intersection(p, d)
 	if ( intersection )
 		return shade(p, d, intersection)
-	return outer_space_color
+	//return outer_space_color
+	//console.log(Math.floor(100 * d[0]) % imageSize)
+	let c1 = noise_texture[ Math.floor( noise_texture_size * (d[1]+1) / 2 ) % noise_texture_size ]
+							[ Math.floor( noise_texture_size * (d[0]+1) / 2 ) % noise_texture_size ]
+							
+	let c2 = noise_texture[ Math.floor( noise_texture_size * (d[0] + elapsed_time / 20000 +1) / 2 ) % noise_texture_size ] 
+		[ Math.floor( noise_texture_size * (d[1] + elapsed_time / 40000 + 1) / 2 ) % noise_texture_size]
+	//return vec4( rand, rand, rand, 1.0 )
+	let rand = c1 + c2
+	return add( scale( 1- rand, outer_space_color  ), scale( rand, white  ) )
+	//return outer_space_color
 }
 
 // Ray tracing function
 function raytrace()
 {
 	let startTime = new Date()
-	let frameDuration = 1000 / 60
+	let frameDuration = 1000 / 1
 	var loop = true;
 	//console.log('start', tempd)
 		//mult(trt, mult(rtt, ta) );
@@ -431,28 +518,33 @@ function raytrace()
 	front = vec3( mult( rotator, vec4(0,0,1,0) ) )
 	right = vec3( mult( rotator, vec4(1,0,0,0) ) )
 	// Limit via time
+	elapsed_time += 1000 / 60
 	while( (new Date) - startTime < 1000 / 60) {
-		let x = renderMap[drawIndex] % imageSize;
-		let y = Math.floor( renderMap[drawIndex] / imageSize );
-		let px = ( x / imageSize - 0.5 ) * 2
-		let py = ( y / imageSize - 0.5 ) * 2
-		let p = add( cam_pos, vec3( px, py, 1.0 ) )
-		let tempd = vec4( normalize( vec3( px, py, 1.0 ), false ) )
-		
-		let rotated = mult( rotator, tempd )
-		//console.log('rotated', rotated)
-		
-		let d = vec3(rotated)
-		//console.log('end', d)
-		
-		// Trace Here
-		var color = trace(p,d);
-		// Set color values
-		image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
-		image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
-        image[(y * imageSize + x) * 3 + 2] = 255 * color[2];
-		//drawIndex = Math.floor ( Math.random() * pixCount );
-		drawIndex = ( drawIndex + 1 ) % pixCount;
+		for( let i = 0; i < 2048; i++ ) {
+			let x = renderMap[drawIndex] % imageSize;
+			let y = Math.floor( renderMap[drawIndex] / imageSize );
+			let px = ( x / imageSize - 0.5 ) * 2
+			let py = ( y / imageSize - 0.5 ) * 2
+			let p = add( cam_pos, vec3( px, py, 1.0 ) )
+			let tempd = vec4( normalize( vec3( px, py, 1.0 ), false ) )
+			
+			let rotated = mult( rotator, tempd )
+			//console.log('rotated', rotated)
+			
+			let d = vec3(rotated)
+			//console.log('end', d)
+			
+			// Trace Here
+			var color = trace(p,d);
+			//var rand = noise_texture[y*2%noise_texture_size][x*2%noise_texture_size]
+			//var color = vec4( rand, rand, rand, 1.0)
+			// Set color values
+			image[(y * imageSize + x) * 3 + 0] = 255 * color[0];
+			image[(y * imageSize + x) * 3 + 1] = 255 * color[1];
+			image[(y * imageSize + x) * 3 + 2] = 255 * color[2];
+			//drawIndex = Math.floor ( Math.random() * pixCount );
+			drawIndex = ( drawIndex + 1 ) % pixCount;
+		}
 	}
 	update_objects()
 	requestAnimationFrame(render);
@@ -500,6 +592,8 @@ window.onload = function init()
 	
 	canvas.addEventListener('mousemove', e => {
 		let sensitivity = 0.05
+		//console.log(e.movementX)
+		//console.log(e.movementY)
 		hor_rot += e.movementX * sensitivity
 		vert_rot -= e.movementY * sensitivity
 	});
@@ -560,7 +654,14 @@ window.onload = function init()
 		sphere: 5,
 		triangle: 5,
 	}
+	
+	//generate noise texture
+	for( let y = 0; y < noise_texture_size; y++ )
+		for( let x = 0; x < noise_texture_size; x++ ) {
+			noise_texture[y][x] = perlin( x / noise_texture_size * perlin_steps, y / noise_texture_size * perlin_steps )
+		}
 
+	//console.log(noise_texture)
 	// Creates the objects
 	generate_objects( generateCounts )
 	

@@ -14,5 +14,5 @@ A ray tracer.
 Just open the HTML files with a browser (Don't Change the HTML file's relative location to the JS files).
 
 ## Authors
-Yusuf Avci
+Yusuf Avci\
 Sonat Uzun
